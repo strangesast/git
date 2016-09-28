@@ -1,0 +1,8 @@
+extends ../layout
+
+block workspace
+  include content
+
+  prepend scripts
+    script().
+      var INITIAL_DATA = JSON.parse('!{JSON.stringify(data)}');

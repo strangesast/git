@@ -1,0 +1,17 @@
+doctype html
+html
+  head
+    title= title
+    link(rel='stylesheet', href='/stylesheets/style.css')
+    script(src='/javascripts/sw.js', type='javascript/worker')
+
+  body
+
+    block content
+
+    include scripts
+
+    block scripts
+      script(src='/javascripts/models.js')
+      script(src='/javascripts/views.js')
+      script(src='/javascripts/main.js')
