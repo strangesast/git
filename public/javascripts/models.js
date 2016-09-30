@@ -1,4 +1,7 @@
 // base models
+//Backbone.sync = function(method, model, options) {
+//  console.log(method, model, options);
+//};
 var Model = Backbone.Model.extend({
   idAttribute: '_id'
 });
