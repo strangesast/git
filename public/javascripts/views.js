@@ -17,7 +17,8 @@ var JobView = Backbone.View.extend({
       this.listenTo(col, 'remove', this.colremove);
     }, this);
   },
-  colreset: function(collection) {
+  colreset: function(collection, options) {
+    console.log('reset');
     var el = this.$('.' + collection.name + '-list');
     var template = this.$('#' + collection.name + '-template')[0];
     el.empty();
@@ -28,7 +29,8 @@ var JobView = Backbone.View.extend({
       el.append(modelEl);
     });
   },
-  coladd: function(model) {
+  coladd: function(model, collection, options) {
+    console.log('add', model);
     var el = this.$('.' + model.collection.name + '-list');
     var template = this.$('#' + model.collection.name + '-template')[0];
     var modelEl = document.importNode(template.content, true).firstChild
@@ -36,7 +38,7 @@ var JobView = Backbone.View.extend({
     model.binding = rivets.bind(modelEl, {model: model});
     el.append(modelEl);
   },
-  colremove: function(model) {
+  colremove: function(model, collection, options) {
     var modelEl = this.$('#' + model.collection.name + '-' + model.cid);
     modelEl.remove();
     model.binding.unbind();
@@ -73,6 +75,7 @@ var JobView = Backbone.View.extend({
     }
     var obj = parseForm(form);
     var m = col.create(obj);
+    console.log('creating...');
     form.name.value = '';
     e.preventDefault();
   },

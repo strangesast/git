@@ -15,6 +15,7 @@ var setup = function() {
   collections.buildings = collections.buildings || new BuildingCollection();
   collections.components = collections.components || new ComponentCollection();
 
+
   return Object.keys(collections).reduce(function(a, b) {
     return a.then(function() {
       return establish(collections[b]);
@@ -23,6 +24,11 @@ var setup = function() {
     if(view != null) view.remove();
     var workspace = document.querySelector('.workspace')
     view = new JobView({ el: workspace }, { collections: collections });
+    collections.jobs.reset(INITIAL_DATA.jobs);
+    collections.phases.reset(INITIAL_DATA.phases);
+    collections.buildings.reset(INITIAL_DATA.buildings);
+    collections.components.reset(INITIAL_DATA.components);
+
   });
 };
 

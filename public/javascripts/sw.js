@@ -11,16 +11,9 @@ const CACHE_NAME = 'test-cache';
 
 var init = false;
 
-var collections = {};
-
 self.addEventListener('install', function(e) {
   console.log('installing...');
   e.waitUntil(caches.open(CACHE_NAME).then(function() {
-    collections.jobs = new JobCollection();
-    collections.phases = new PhaseCollection();
-    collections.buildings = new BuildingCollection();
-    collections.components = new ComponentCollection();
-    console.log('done!');
     return self.skipWaiting();
   }));
 });
@@ -48,24 +41,6 @@ self.addEventListener('activate', function(e) {
           };
         });
       }).then(function(result) {
-        console.log(result.type);
-        if(!result || result.type == null) throw new Error('unexpected result');
-        if(result.type == 'timeout') {
-          return Promise.all(Object.keys(collections).map((name)=>collections[name].fetch()));
-
-        } else if (result.type == 'init') {
-          if(result.data == null) throw new Error('unexpected result');
-          return Promise.all(Object.keys(result.data).filter((name) => {
-            return collections[name] != null;
-
-          }).map((name) => {
-            return collections[name].reset(result.data[name]);
-
-          }));
-        }
-        init = true;
-        return;
-      }).then(function() {
         clients.forEach((client) => {
           client.postMessage({type: 'ready'});
 
@@ -75,9 +50,86 @@ self.addEventListener('activate', function(e) {
   }));
 });
 
+var paths = {};
+
+var re = /^[\w\.\:]*\/\/[\w\.\:]+\/(.*)/;
+
 self.addEventListener('fetch', function(e) {
-  console.log('fetch');
+  var fullUrl = e.request.url;
+  var pathUrl = re.exec(fullUrl)[1];
+  var pathsArray = Object.keys(paths);
+  var match;
+  for(var i=0,path; path=pathsArray[i], i < pathsArray.length; i++) {
+    if(!pathUrl.startsWith(path)) continue;
+    match = path;
+    break;
+  }
+  if(!match) {
+    console.log('no match');
+    return;
+  }
+  if(e.request.method.toLowerCase() === 'get') {
+    return;
+  }
+  var collectionName = paths[match].collectionName;
+  var initiator = e.clientId;
+  var obj = paths[match];
+
+  e.respondWith(fetch(e.request).then(function(response) {
+    return self.clients.matchAll().then(function(clients) {
+      var clientIds = clients.map((client)=>client.id);
+      console.log(clientIds.length);
+
+      var listeners = Object.keys(paths[match].clients);
+      listeners.forEach(function(id, i, arr) {
+        console.log(id == initiator);
+        if(clientIds.indexOf(id) === -1) {
+          delete obj.clients[id];
+
+        } else if (id !== initiator) {
+          var port = paths[match].clients[id];
+          port.postMessage({
+            type: 'sync',
+            data: {
+              on: collectionName,
+              type: e.request.method,
+              url: pathUrl
+            }
+          });
+        }
+      });
+      return response;
+    }).catch(function(err) {
+      throw err;
+    });
+  }));
 });
+
+var registerPath = function(clientId, port, path, name) {
+  return new Promise(function(resolve, reject) {
+    paths[path] = paths[path] || {};
+    paths[path].clients = paths[path].clients || {};
+    if(clientId in paths[path].clients) throw new Error('client already listening on path');
+    paths[path].clients[clientId] = port;
+    paths[path].collectionName = name;
+    resolve();
+  }).then(function() {
+    port.postMessage({
+      type: 'setup',
+      data: {
+        'status': 'complete'
+      }
+    });
+  }).catch(function(err) {
+    port.postMessage({
+      type: 'setup',
+      data: {
+        'status': 'error',
+        message: err
+      }
+    });
+  });
+};
 
 self.addEventListener('message', function(e) {
   if(typeof e.data !== 'object') throw new Error('invalid data type');
@@ -87,10 +139,11 @@ self.addEventListener('message', function(e) {
   switch(message.type) {
     case 'setup':
       if(data.type !== 'collection') throw new Error('invalid message');
-      if(!collections.hasOwnProperty(data.name))
-        throw new Error('invalid or nonexistant collection name "'+data.name+'"');
-      var col = collections[data.name];
-      col.syncFrom(e.source.id, e.ports[0]); 
+      if(!data.hasOwnProperty('name') || !data.hasOwnProperty('path'))
+        throw new Error('name and path required');
+
+      // port for later
+      registerPath(e.source.id, e.ports[0], data.path, data.name);
       break;
 
     default:
