@@ -4,9 +4,6 @@ importScripts(
   '/javascripts/models.js'
 );
 
-Backbone.sync = function(method, model, options) {
-  console.log('sync!');
-};
 const CACHE_NAME = 'test-cache';
 
 var init = false;
@@ -51,13 +48,14 @@ self.addEventListener('activate', function(e) {
 });
 
 var paths = {};
+var collectionPaths = {}; // collections to paths
 
 var re = /^[\w\.\:]*\/\/[\w\.\:]+\/(.*)/;
 
 self.addEventListener('fetch', function(e) {
   var fullUrl = e.request.url;
   var pathUrl = re.exec(fullUrl)[1];
-  var pathsArray = Object.keys(paths);
+  var pathsArray = Object.keys(paths)
   var match;
   for(var i=0,path; path=pathsArray[i], i < pathsArray.length; i++) {
     if(!pathUrl.startsWith(path)) continue;
@@ -76,34 +74,63 @@ self.addEventListener('fetch', function(e) {
   var obj = paths[match];
 
   e.respondWith(fetch(e.request).then(function(response) {
-    return self.clients.matchAll().then(function(clients) {
-      var clientIds = clients.map((client)=>client.id);
-      console.log(clientIds.length);
+    var port = obj.clients[initiator];
 
-      var listeners = Object.keys(paths[match].clients);
+    if(port) {
+      port.postMessage({
+        type: 'pull',
+        data: {
+          on: collectionName,
+          type: e.request.method,
+          url: pathUrl
+        }
+      });
+    }
+
+    return new Promise(function(resolve, reject) {
+      setTimeout(function() {
+        return resolve(response);
+      }, 100);
+    });
+
+  }));
+});
+
+var onMessage = function(initiator) {
+  return function(e) {
+    if(typeof e.data !== 'object') throw new Error('invalid data type');
+    var message = e.data;
+    var data = message.data;
+    if(!data.hasOwnProperty('on')) throw new Error('collection name must be specified');
+    var collectionName = data.on;
+
+    // temporarily cache data.values
+    var values = data.values;
+    console.log(values);
+
+    var obj = paths[collectionPaths[collectionName]];
+
+    return self.clients.matchAll().then(function(clients) {
+      var listeners = Object.keys(obj.clients);
+      var clientIds = clients.map((client)=>client.id);
+
       listeners.forEach(function(id, i, arr) {
-        console.log(id == initiator);
         if(clientIds.indexOf(id) === -1) {
           delete obj.clients[id];
 
         } else if (id !== initiator) {
-          var port = paths[match].clients[id];
+          var port = obj.clients[id];
           port.postMessage({
             type: 'sync',
             data: {
-              on: collectionName,
-              type: e.request.method,
-              url: pathUrl
+              on: collectionName
             }
           });
         }
       });
-      return response;
-    }).catch(function(err) {
-      throw err;
     });
-  }));
-});
+  };
+};
 
 var registerPath = function(clientId, port, path, name) {
   return new Promise(function(resolve, reject) {
@@ -112,8 +139,10 @@ var registerPath = function(clientId, port, path, name) {
     if(clientId in paths[path].clients) throw new Error('client already listening on path');
     paths[path].clients[clientId] = port;
     paths[path].collectionName = name;
+    collectionPaths[name] = path;
     resolve();
   }).then(function() {
+    port.onmessage = onMessage(clientId);
     port.postMessage({
       type: 'setup',
       data: {
@@ -125,7 +154,7 @@ var registerPath = function(clientId, port, path, name) {
       type: 'setup',
       data: {
         'status': 'error',
-        message: err
+        message: JSON.parse(JSON.stringify(err))
       }
     });
   });
