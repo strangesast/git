@@ -2,6 +2,8 @@ var collections = {};
 var view;
 var blacklisted = ['update', 'sort', 'destroy', 'request', 'sync', 'error', 'invalid', 'route'];
 
+var repo = {};
+
 var establish = function(collection) {
   if(collection.name == null) throw new Error('collection needs a name');
   var worker = navigator.serviceWorker.controller;
@@ -9,11 +11,22 @@ var establish = function(collection) {
   return collection.syncTo(worker);
 }
 
+var buildTree = function() {
+  Promise.all(Object.keys(collections).map((name)=> {
+    return collections[name].saveTree().then(function(hash) {
+      return [name, hash];
+    });
+  })).then(function(hashNamePairs) {
+    console.log(hashNamePairs);
+  });
+};
+
 var setup = function() {
-  collections.jobs = collections.jobs || new JobCollection();
-  collections.phases = collections.phases || new PhaseCollection();
-  collections.buildings = collections.buildings || new BuildingCollection();
-  collections.components = collections.components || new ComponentCollection();
+  collections.phases = collections.phases || new PhaseCollection(null, {repo: repo});
+  collections.buildings = collections.buildings || new BuildingCollection(null, {repo: repo});
+  collections.components = collections.components || new ComponentCollection(null, {repo: repo});
+
+  collections.jobs = collections.jobs || new JobCollection(null, {repo: repo, folders: collections});
 
 
   return Object.keys(collections).reduce(function(a, b) {

@@ -1,9 +1,47 @@
 // base models
 var Model = Backbone.Model.extend({
-  idAttribute: '_id'
+  idAttribute: '_id',
+  initialize: function() {
+    this.repo = this.collection.repo;
+  },
+  saveHash: function() {
+    var repo = this.repo || this.collection.repo;
+    var text = JSON.stringify(this.toJSON());
+
+    return this.repo.saveAsP('blob', text).then(function(hash) {
+      return hash;
+    });
+  },
+  loadHash: function(hash, type) {
+    return this.repo.loadAsP(type || 'text', hash || this.hash);
+  }
 });
 
 var Collection = Backbone.Collection.extend({
+  initialize: function(attrs, options) {
+    if(options.repo) this.repo = options.repo;
+    if(this.repo && this.repo.createTree === undefined) git.initializeRepo(this.repo);
+  },
+  saveHash: function() {
+    // save any collection-level properties. may not be used
+  },
+  saveTree: function() {
+    // create tree based on model contents
+    if(this.name == null) throw new Error('need name!');
+    if(this.repo == null) throw new Error('repo undefined!');
+
+    return Promise.all(this.map((model) => {
+      return model.saveHash().then(function(hash) {
+        return [model.get('_id'), hash];
+      });
+    })).then(function(arr) {
+      var tree = {};
+      arr.forEach(function(pair) {
+        tree[pair[0]] = { mode: git.modes.file, hash: pair[1] }
+      });
+      return this.repo.saveAsP('tree', tree);
+    });
+  },
   // initiate synchronization with similar collection
   // attach message channel sync to collection in worker, frame, etc
   syncTo: function(worker) {
@@ -54,7 +92,6 @@ var Collection = Backbone.Collection.extend({
     var push = function() {
       clearTimeout(this.syncop);
       this.syncop = setTimeout(function() {
-        console.log(self);
         var message = {
           type: 'sync',
           data: {
@@ -125,10 +162,38 @@ var JobModel = Model.extend({
     rootPhase: null
   },
   initialize: function(attrs, options) {
-
+    this.repo = this.collection.repo;
+    this.folders = this.collection.folders;
   },
   validate: function(attrs, options) {
     if(attrs.name == null || attrs.name == '') return 'name required';
+    this.folders = options.folders;
+  },
+  saveTree: function() {
+    if(this.repo == null) throw new Error('repo undefined!');
+
+    return this.saveHash().then((selfhash) => {
+      return Promise.all([
+        this.folders.phases,
+        this.folders.buildings,
+        this.folders.components
+      ].map((col) => {
+        return col.saveTree().then(function(hash) {
+          return [col.name, hash];
+        });
+      })).then((pairs) => {
+        var tree = {};
+        tree[this.get('_id')] = { mode: git.modes.file, hash: selfhash };
+        pairs.forEach(function(pair) {
+          tree[pair[0]] = { mode: git.modes.tree, hash: pair[1] };
+        });
+        return this.repo.saveAsP('tree', tree);
+      });
+    }).then((treehash) => {
+      this.repo.treeWalkP(treehash).then(function(arr) {
+        console.log(arr);
+      });
+    });
   }
 });
 var JobCollection = Collection.extend({
@@ -136,7 +201,9 @@ var JobCollection = Collection.extend({
   url: '/api/jobs',
   model: JobModel,
   initialize: function(models, options) {
-
+    if(options.folders) this.folders = options.folders;
+    console.log(this.folders);
+    return Collection.prototype.initialize.apply(this, arguments);
   }
 });
 
@@ -148,10 +215,7 @@ var PhaseModel = Model.extend({
 var PhaseCollection = Collection.extend({
   name: 'phases',
   url: '/api/phases',
-  model: PhaseModel,
-  initialize: function(models, options) {
-
-  }
+  model: PhaseModel
 });
 var BuildingModel = Model.extend({
   initialize: function(attrs, options) {
@@ -161,10 +225,7 @@ var BuildingModel = Model.extend({
 var BuildingCollection = Collection.extend({
   name: 'buildings',
   url: '/api/buildings',
-  model: BuildingModel,
-  initialize: function(models, options) {
-
-  }
+  model: BuildingModel
 });
 var ComponentModel = Model.extend({
   initialize: function(attrs, options) {
@@ -174,8 +235,5 @@ var ComponentModel = Model.extend({
 var ComponentCollection = Collection.extend({
   name: 'components',
   url: '/api/components',
-  model: ComponentModel,
-  initialize: function(models, options) {
-
-  }
+  model: ComponentModel
 });

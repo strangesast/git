@@ -1,3 +1,36 @@
+var modes = require('js-git/lib/modes');
+// callback to promise
+var promisify = function(fn) {
+  return function() {
+    var args = [].slice.call(arguments);
+    return new Promise(function(resolve, reject) {
+      fn.apply(null, args.concat(function(err, result) {
+        if(err) return reject(err);
+        resolve(result);
+      }));
+    });
+  };
+};
+
+// stream of reads (with callbacks) to array
+var streamify = function(fn) {
+  return function() {
+    var args = [].slice.call(arguments);
+    return promisify(fn).apply(null, args).then(function(stream) {
+      return new Promise(function(resolve, reject) {
+        function reader(s, arr) {
+          s.read(function(err, result) {
+            if(err) return reject(err);
+            if(result == null) return resolve(arr);
+            return reader(s, arr.concat(result)); 
+          });
+        }
+        reader(stream, []);
+      });
+    });
+  };
+};
+
 var initializeRepo = function(repo) {
   require('js-git/mixins/mem-db')(repo);
   
@@ -21,8 +54,20 @@ var initializeRepo = function(repo) {
   
   // This makes the object interface less strict.  See it's docs for details
   require('js-git/mixins/formats')(repo);
+
+  repo.createTreeP = promisify(repo.createTree.bind(repo));
+  repo.saveAsP = promisify(repo.saveAs.bind(repo));
+  repo.loadAsP = promisify(repo.loadAs.bind(repo));
+  repo.updateRefP = promisify(repo.updateRef.bind(repo));
+  repo.readRefP = promisify(repo.readRef.bind(repo));
+
+  repo.treeWalkP = streamify(repo.treeWalk.bind(repo));
+  repo.logWalkP = streamify(repo.logWalk.bind(repo));
+
+  return repo;
 };
 
 module.exports = git = {
-  initializeRepo: initializeRepo
+  initializeRepo: initializeRepo,
+  modes: modes
 }

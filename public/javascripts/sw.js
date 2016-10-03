@@ -63,6 +63,7 @@ self.addEventListener('fetch', function(e) {
     break;
   }
   if(!match) {
+    console.log(pathUrl);
     console.log('no match');
     return;
   }
