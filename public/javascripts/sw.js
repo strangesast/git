@@ -40,7 +40,6 @@ self.addEventListener('activate', function(e) {
       }).then(function(result) {
         clients.forEach((client) => {
           client.postMessage({type: 'ready'});
-
         });
       });
     });
@@ -50,13 +49,14 @@ self.addEventListener('activate', function(e) {
 var paths = {};
 var collectionPaths = {}; // collections to paths
 
-var re = /^[\w\.\:]*\/\/[\w\.\:]+\/(.*)/;
+var re = /^[\w\.\:]*\/\/[\w\.\:]+\/(.*)/; // http origin
 
 self.addEventListener('fetch', function(e) {
   var fullUrl = e.request.url;
   var pathUrl = re.exec(fullUrl)[1];
   var pathsArray = Object.keys(paths)
   var match;
+
   for(var i=0,path; path=pathsArray[i], i < pathsArray.length; i++) {
     if(!pathUrl.startsWith(path)) continue;
     match = path;
@@ -66,72 +66,63 @@ self.addEventListener('fetch', function(e) {
     console.log('no match');
     return;
   }
-  if(e.request.method.toLowerCase() === 'get') {
-    return;
-  }
-  var collectionName = paths[match].collectionName;
-  var initiator = e.clientId;
+
   var obj = paths[match];
+  var initiator = e.clientId;
 
-  e.respondWith(fetch(e.request).then(function(response) {
-    var port = obj.clients[initiator];
-
-    if(port) {
-      port.postMessage({
-        type: 'pull',
-        data: {
-          on: collectionName,
-          type: e.request.method,
-          url: pathUrl
-        }
-      });
+  var i;
+  if(e.request.method.toLowerCase() == 'get') {
+    if(obj.waitingFor && (i=obj.waitingFor.indexOf(e.clientId)) > -1) {
+      obj.waitingFor.splice(i, 1);
+      var r = obj.response.clone();
+      if(obj.waitingFor.length === 0) 
+        obj.response = null;
+      e.respondWith(r);
     }
+  }
 
-    return new Promise(function(resolve, reject) {
-      setTimeout(function() {
-        return resolve(response);
-      }, 100);
-    });
-
-  }));
 });
 
-var onMessage = function(initiator) {
-  return function(e) {
-    if(typeof e.data !== 'object') throw new Error('invalid data type');
-    var message = e.data;
-    var data = message.data;
-    if(!data.hasOwnProperty('on')) throw new Error('collection name must be specified');
-    var collectionName = data.on;
+var onMessage = function(e) {
+  if(typeof e.data !== 'object') throw new Error('invalid data type');
+  var message = e.data;
+  var data = message.data;
+  if(message.type == 'sync') {
+    if(!('on' in data)) throw new Error('collection not specified');
+    var obj = paths[collectionPaths[data.on]];
+    if(e.target.clientId == null) throw new Error('clientid missing (wrong port)');
+    var vals = data.values;
 
-    // temporarily cache data.values
-    var values = data.values;
-    console.log(values);
+    // create response based on changes
+    obj.response = new Response(JSON.stringify(vals));
+    obj.waitingFor = [];
 
-    var obj = paths[collectionPaths[collectionName]];
-
-    return self.clients.matchAll().then(function(clients) {
-      var listeners = Object.keys(obj.clients);
-      var clientIds = clients.map((client)=>client.id);
-
-      listeners.forEach(function(id, i, arr) {
+    self.clients.matchAll().then(function(clients) {
+      var clientIds = clients.map((c)=>c.id);
+      Object.keys(obj.clients).forEach((id, i) => {
+        // check for client disconnect (no other event)
         if(clientIds.indexOf(id) === -1) {
           delete obj.clients[id];
 
-        } else if (id !== initiator) {
-          var port = obj.clients[id];
-          port.postMessage({
+        // only 'other' clients
+        } else if(id !== e.target.clientId) {
+          // tell client to pull changes
+          obj.waitingFor.push(id);
+          obj.clients[id].postMessage({
             type: 'sync',
             data: {
-              on: collectionName
+              on: data.on
             }
           });
         }
       });
     });
-  };
+  } else {
+    throw new Error('unexpected message type');
+  }
 };
 
+// register client to collection, save port etc
 var registerPath = function(clientId, port, path, name) {
   return new Promise(function(resolve, reject) {
     paths[path] = paths[path] || {};
@@ -142,13 +133,15 @@ var registerPath = function(clientId, port, path, name) {
     collectionPaths[name] = path;
     resolve();
   }).then(function() {
-    port.onmessage = onMessage(clientId);
     port.postMessage({
       type: 'setup',
       data: {
         'status': 'complete'
       }
     });
+    port.clientId = clientId;
+    port.addEventListener('message', onMessage);
+    port.start();
   }).catch(function(err) {
     port.postMessage({
       type: 'setup',

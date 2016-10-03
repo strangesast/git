@@ -44,17 +44,6 @@ var Collection = Backbone.Collection.extend({
       setTimeout(function() {
         return reject(new Error('setup timeout reached'));
       }, 1000);
-    }).then(function() {
-      var done = () => {
-        self.syncInProgress = false;
-        self.off('error', done);
-        self.off('sync', done);
-      }
-      self.on('request', () => {
-        self.syncInProgress = true;
-        self.once('sync', done);
-        self.once('error', done);
-      });
     });
   },
   syncFrom: function(clientId, port) {
@@ -63,32 +52,30 @@ var Collection = Backbone.Collection.extend({
     var self = this;
 
     var push = function() {
-      var data = self.toJSON();
-      port.postMessage({
-        type: 'push',
+      var message = {
+        type: 'sync',
         data: {
-          values: data,
-          url: self.url,
-          on: self.name
+          on: self.name,
+          values: self.toJSON()
         }
-      });
-    };
+      };
+      console.log('push!', message)
+      port.postMessage(message);
+    }
 
+    // for these events, send new collection state to other clients
+    self.on('add', push)
+    self.on('remove', push)
+    self.on('change', push)
+
+    // receive other clients' updates
     var onMessage = function(e) {
       if(typeof e.data !== 'object') throw new Error('invalid data type');
       var message = e.data;
       var data = message.data;
       if(message.type === 'sync') {
         if(data.on !== self.name) throw new Error('collection mismatch');
-        self.fetch(); // really basic, stupid
-
-      } else if (message.type === 'pull') {
-        if(data.on !== self.name) throw new Error('collection mismatch');
-        if(self.syncInProgress) {
-          self.once('sync', push);
-        } else {
-          push();
-        }
+        self.fetch();
 
       } else {
         throw new Error('unrecognized message type');
