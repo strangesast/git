@@ -52,21 +52,25 @@ var Collection = Backbone.Collection.extend({
     var self = this;
 
     var push = function() {
-      var message = {
-        type: 'sync',
-        data: {
-          on: self.name,
-          values: self.toJSON()
-        }
-      };
-      console.log('push!', message)
-      port.postMessage(message);
+      clearTimeout(this.syncop);
+      this.syncop = setTimeout(function() {
+        console.log(self);
+        var message = {
+          type: 'sync',
+          data: {
+            on: self.name,
+            values: self.toJSON()
+          }
+        };
+        console.log('push!', message)
+        port.postMessage(message);
+      }, 100);
     }
 
     // for these events, send new collection state to other clients
-    self.on('add', push)
-    self.on('remove', push)
-    self.on('change', push)
+    self.on('add', push);
+    self.on('remove', push);
+    self.on('change', push);
 
     // receive other clients' updates
     var onMessage = function(e) {
@@ -75,7 +79,16 @@ var Collection = Backbone.Collection.extend({
       var data = message.data;
       if(message.type === 'sync') {
         if(data.on !== self.name) throw new Error('collection mismatch');
-        self.fetch();
+
+        self.off('add', push);
+        self.off('remove', push);
+        self.off('change', push);
+
+        self.fetchThen().then(function() {
+          self.on('add', push);
+          self.on('remove', push);
+          self.on('change', push);
+        });
 
       } else {
         throw new Error('unrecognized message type');
@@ -87,6 +100,21 @@ var Collection = Backbone.Collection.extend({
 
     port.addEventListener('error', function(err) {
       console.log('error', err);
+    });
+  },
+  fetchThen: function() {
+    var self = this;
+    return new Promise(function(resolve, reject) {
+      self.fetch({
+        success: function() {
+          var args = [].slice.call(arguments);
+          resolve(args);
+        },
+        error: function() {
+          var args = [].slice.call(arguments);
+          resolve(args); // or reject()
+        }
+      });
     });
   }
 });
