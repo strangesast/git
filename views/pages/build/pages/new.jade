@@ -1,0 +1,12 @@
+div
+  h1 New Job
+
+  form(name='new-job')
+    input(name='owner', value=owner, disabled=true)
+    div
+      label(for='job-name-input') Job Name
+      input#job-name-input(name='name', type='text')
+
+    div
+      label(for='job-description-input') Description
+      textarea#job-description-input(name='description')

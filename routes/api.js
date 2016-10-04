@@ -1,7 +1,9 @@
 var express = require('express');
-var router = express.Router();
-
+var util = require('util');
+var path = require('path');
 var mongoose = require('mongoose');
+
+var router = express.Router();
 mongoose.Promise = global.Promise;
 
 var Job = require('../models/job');
@@ -70,21 +72,37 @@ router.route('/:name/:id?')
   }
   return request.then(defaultReturn(res.json, res)).catch(defaultReturn(next));
 })
+.all(function(req, res, next) {
+  if(!req.user) {
+    //next({status: 401, message: 'unauthorized'});
+    return next();
+  }
+  return next();
+})
 .post(function(req, res, next) {
   var id = req.params.id;
   var body = req.body;
   var Model = req.Model;
-  var model = new Model(body);
-  var request = model.save();
-
-  // temporary
-  if(req.get('Content-Type') === 'application/x-www-form-urlencoded') {
-    return request.then((doc) => {
-      res.redirect('/app/build/');
-    }).catch(defaultReturn(next));
+  if('owner' in Model.schema.paths) {
+    body.owner = req.user ? req.user._id : '57f3df8841f7dc76f4a2af4b';
   }
-  
-  request.then(defaultReturn(res.json, res)).catch(defaultReturn(next));
+  var model = new Model(body);
+  model.save().then(function(doc) {
+    if(req.get('Content-Type') === 'application/x-www-form-urlencoded') { // temporary
+      return res.redirect('/app/build/');
+    }
+    return res.json(doc);
+
+  }).catch(function(err) {
+    switch (err.name) {
+      case 'ValidationError':
+      default:
+        if(err.errors) 
+        var message = err.message;
+        if(err.errors) message += ' (' + Object.keys(err.errors).map((n)=>err.errors[n].message).join(', ') + ')';
+        return next({status: 400, message: message, error: err});
+    }
+  });
 })
 .put(function(req, res, next) {
   var id = req.params.id;
@@ -104,6 +122,46 @@ router.route('/:name/:id?')
   }
 
   return request.then(defaultReturn(res.json, res)).catch(defaultReturn(next));
+});
+
+router.route('/:name1/:id1/:name2')
+.all(function(req, res, next) {
+  if(req.params.name1 !== 'jobs') return next(); // eventually, not yet support this
+  var Model1 = nameToModel(req.params.name1);
+  var id1 = req.params.id1;
+  Model1.findById(id1).then(function(doc) {
+    if(doc == null) return next({status: 404, error: new Error('not found')});
+    var Model2 = nameToModel(req.params.name2);
+    req.parentDoc = doc;
+    req.Model = Model2;
+    next();
+  });
+})
+.get(function(req, res, next) {
+  var par = req.parentDoc;
+  var Model = req.Model;
+
+  Model.find({job: par._id}).then(function(docs) {
+    res.json(docs);
+  });
+})
+.post(function(req, res, next) {
+  var body = req.body;
+  var par = req.parentDoc;
+  var Model = req.Model;
+
+  body.job = par._id;
+
+  var model = new Model(body);
+  model.save().then(function(doc) {
+    if(req.get('Content-Type') === 'application/x-www-form-urlencoded') { // temporary
+      return res.redirect(path.join('/app/build/', String(par._id)));
+    }
+    res.json(doc);
+
+  }).catch(function(err) {
+    next(err);
+  });
 });
 
 module.exports = router;

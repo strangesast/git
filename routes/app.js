@@ -2,7 +2,13 @@ var express = require('express');
 var path = require('path');
 var router = express.Router();
 var fs = require('fs');
+var mongoose = require('mongoose');
+var ObjectId = mongoose.Types.ObjectId;
 
+
+var users = require('./users');
+
+var Account = require('../models/account');
 var Job = require('../models/job');
 var Component = require('../models/component');
 var Phase = require('../models/phase');
@@ -58,17 +64,93 @@ router.get('/' + WORKER_FILENAME, function(req, res, next) {
   res.sendFile(path.join(__dirname, '../public/javascripts/', WORKER_FILENAME));
 });
 
+// temporary
+router.get('/', function(req, res, next) {
+  //res.redirect(req.originalUrl + 'build/jobs');
+  Job.find({}).populate('owner').then(function(jobs) {
+    res.render('pages/index/index', {jobs: jobs});
+  });
+});
+
+router.use('/user', users); // offload login stuff
+
+router.get('/user/:id/jobs', function(req, res, next) {
+  if(!ObjectId.isValid(req.params.id)) return next();
+  Account.findById(req.params.id).then(function(doc) {
+    if(doc == null) return next({status: 404, error: new Error('not found')});
+    res.redirect(path.join('/app/user/', doc.username, '/jobs'));
+  }).catch(function(err) {
+    next(err);
+  });
+});
+
+router.get('/user/:username/jobs', function(req, res, next) {
+  Account.findOne({username: req.params.username}).then(function(user) {
+    if(user == null) return next({status: 404, error: new Error('not found')});
+    Job.find({owner: user._id}).then(function(docs) {
+      res.render('pages/user/jobs', {jobs: docs, user: user});
+    });
+  });
+});
+
+router.get('/build', function(req, res, next) {
+  Job.find({}).then(function(docs) {
+    res.render('pages/build/index', {jobs: docs});
+    
+  }).catch(function(err) {
+    next(err);
+  });
+});
+
+router.get('/build/:id', function(req, res, next) {
+  if(!ObjectId.isValid(req.params.id)) return next();
+  Job.findById(req.params.id).populate('owner').then(function(doc) {
+    if(doc == null) return next({error: new Error('not found'), status: 404});
+    res.redirect(path.join(doc.owner.username, doc.shortname.split(' ').join('_')));
+
+  }).catch(function(err) {
+    next(err);
+  });
+});
+
+router.get('/build/:user', function(req, res, next) {
+  res.redirect(path.join('/app/user/', req.params.user, '/jobs'));
+});
+
+router.get('/build/:username/:shortname', function(req, res, next) {
+  var shortname = req.params.shortname;
+  var username = req.params.username;
+  Account.findOne({username: username}).then(function(user) {
+    if(user == null) return next({status: 404, error: new Error('not found')});
+
+    return Job.findOne({owner: user._id, shortname: shortname.split('_').join(' ')}).then(function(job) {
+      if(job == null) return next({status: 404, error: new Error('not found')});
+
+      var q = {job: job._id};
+      var names = ['phases', 'buildings', 'components'];
+      return Promise.all(names.map((n)=>nameToModel(n).find(q).populate('parent'))).then(function(arr) {
+        var result = {};
+        names.forEach((n, i)=>{
+          result[n] = arr[i];
+        });
+        result.job = job;
+        res.render('pages/build/job', result);
+      });
+    });
+  }).catch(function(err) {
+    return next(err);
+  });
+});
+
 router.get('/:pageName$', function(req, res, next) {
   if(VALID_PAGES.indexOf(req.params.pageName) === -1) return next();
   res.redirect(req.originalUrl + '/');
 });
 
-router.get('/', function(req, res, next) {
-  res.redirect(req.originalUrl + 'build/'); //temporary
-});
-
-router.get('/:pageName?/*', function(req, res, next) {
+router.get('/:pageName/*', function(req, res, next) {
+  console.log(req.param.pageName);
   var pageName = req.params.pageName || 'index';
+  console.log(pageName);
   if(VALID_PAGES.indexOf(pageName) === -1) return next();
   if(!req.accepts('html')) {
     return next();

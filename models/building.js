@@ -7,7 +7,23 @@ var schema = new Schema({
   name: {
     type: String,
     required: true
-  }
+  },
+  job: {
+    type: ObjectId,
+    ref: 'Job'
+  },
+  'parent': {
+    type: ObjectId,
+    ref: 'Building'
+  },
+  description: String
+
+}, {timestamps: true});
+
+schema.pre('validate', function(next) {
+  if(!this['parent']) this['parent'] = null; // post likes empty string
+
+  next();
 });
 
 module.exports = Building = mongoose.model('Building', schema);

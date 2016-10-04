@@ -1,0 +1,73 @@
+div.workspace
+  h1 Build Workspace
+
+  div
+    h2 Jobs
+    .list.jobs-list
+      each job in data.jobs
+        .list-item
+          span #{ job.name }
+
+    template#jobs-template
+      .list-item
+        span { model:name }
+        button.remove Remove
+
+
+    form(name='job', action='/api/jobs/', method='post')
+      label Name
+        br
+        input(name='name', placeholder='name', type='text')
+      button(type='submit') Create
+
+  div
+    h2 Phases
+    .list.phases-list
+      each phase in data.phases
+        .list-item #{ phase.name }
+
+    template#phases-template
+      .list-item
+        span { model:name }
+        button.remove Remove
+
+
+    form(name='phase', action='/api/phases/', method='post')
+      label Name
+        br
+        input(name='name', placeholder='name', type='text')
+      button(type='submit') Create
+
+  div
+    h2 Buildings
+    .list.buildings-list
+      each building in data.buildings
+        .list-item #{ building.name }
+
+    template#buildings-template
+      .list-item
+        span { model:name }
+        button.remove Remove
+
+    form(name='building', action='/api/buildings/', method='post')
+      label Name
+        br
+        input(name='name', placeholder='name', type='text')
+      button(type='submit') Create
+
+  div
+    h2 Components
+    .list.components-list
+      each component in data.components
+        .list-item #{ component.name }
+
+    template#components-template
+      .list-item
+        span { model:name }
+        button.remove Remove
+
+    form(name='component', action='/api/components/', method='post')
+      label Name
+        br
+        input(name='name', placeholder='name', type='text')
+      button(type='submit') Create

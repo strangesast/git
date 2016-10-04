@@ -1,0 +1,121 @@
+extends ../nav_workspace
+
+block workspace
+  h1=job.name
+  span=job._id
+  p=job.description
+
+  div
+    h2 Phases
+    if phases.length
+      each phase in phases
+        div
+          h3=phase.name
+          p Parent: #{phase.parent ? phase.parent.name : 'null'}
+          span Description
+          if phase.description
+            p=phase.description
+          else
+            p
+              i (no description)
+    else
+      p No phases
+
+    form(name='new-phase', method='post', action='/api/jobs/#{job._id}/phases')
+      label(for='new-phase-name-input') Name
+      br
+      input#new-phase-name-input(name='name', type='text')
+      br
+      label(for='new-phase-parent-input') Parent
+      br
+      select#new-phase-parent-input(name='parent', type='text')
+        option(value='') null
+        each phase in phases
+          option(value=phase._id)=phase.name
+      br
+      label(for='new-phase-description-textarea') Description
+      br
+      textarea(name='description')
+      br
+      button(type='submit') Submit
+
+  div
+    h2 Buildings
+    if buildings.length
+      each building in buildings
+        div
+          h3=building.name
+          if building.description
+            p=building.description
+          else
+            p
+              i (no description)
+    else
+      p No buildings
+
+    form(name='new-building', method='post', action='/api/jobs/#{job._id}/buildings')
+      label(for='new-building-name-input') Name
+      br
+      input#new-building-name-input(name='name', type='text')
+      br
+      label(for='new-building-parent-input') Parent
+      br
+      select#new-building-parent-input(name='parent', type='text')
+        option(value='') null
+        each building in buildings
+          option(value=building._id)=building.name
+      br
+      label(for='new-building-description-textarea') Description
+      br
+      textarea(name='description')
+      br
+      button(type='submit') Submit
+
+
+  div
+    h2 Components
+    if components.length
+      each component in components
+        div
+          h3=component.name
+          if component.description
+            p=component.description
+          else
+            p
+              i (no description)
+
+    else
+      p No Components
+
+    form(name='new-component', method='post', action='/api/jobs/#{job._id}/components')
+      label(for='new-component-name-input') Name
+      br
+      input#new-component-name-input(name='name', type='text')
+      br
+      label(for='new-component-phase-input') Phase
+      br
+      select#new-component-phase-input(name='phase', type='text')
+        option(value='') null
+        each phase in phases
+          option(value=phase._id)=phase.name
+      br
+      label(for='new-component-building-input') Building
+      br
+      select#new-component-building-input(name='building', type='text')
+        option(value='') null
+        each building in buildings
+          option(value=building._id)=building.name
+      br
+
+      label(for='new-component-parent-input') Parent
+      br
+      select#new-component-parent-input(name='parent', type='text')
+        option(value='') null
+        each component in components
+          option(value=component._id)=component.name
+      br
+      label(for='new-component-description-textarea') Description
+      br
+      textarea(name='description')
+      br
+      button(type='submit') Submit

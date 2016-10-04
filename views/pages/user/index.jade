@@ -1,0 +1,11 @@
+extends ../full_workspace
+
+block workspace
+  if user
+    h1 You are logged in as #{user.name} (#{user.username})
+    span=user._id
+
+  else
+    h1 You are not logged in.
+
+    a(href='/app/user/login') Log in

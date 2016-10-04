@@ -122,6 +122,7 @@ var Collection = Backbone.Collection.extend({
         self.off('change', push);
 
         self.fetchThen().then(function() {
+          // otherwise trigger syncs
           self.on('add', push);
           self.on('remove', push);
           self.on('change', push);

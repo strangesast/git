@@ -1,0 +1,24 @@
+extends ../nav_workspace
+
+block workspace
+  h1 Home
+
+  h3 Recent Jobs
+  if jobs.length
+    each job in jobs
+      div
+        a(href='/app/build/#{job._id}')
+          h4=job.name
+        if job.description
+          p=job.description
+        else
+          p
+            i (no description)
+        p Last modified: #{new Date(job.updatedAt).toString()}
+        p Created by: 
+          a(href='/app/user/#{job.owner._id}') #{job.owner.name}
+  else
+    p No jobs.
+
+  a(href='/app/build/')
+    h2 Create new

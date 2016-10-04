@@ -1,4 +1,3 @@
-var modes = require('js-git/lib/modes');
 // callback to promise
 var promisify = function(fn) {
   return function() {
@@ -21,15 +20,16 @@ var streamify = function(fn) {
         function reader(s, arr) {
           s.read(function(err, result) {
             if(err) return reject(err);
-            if(result == null) return resolve(arr);
-            return reader(s, arr.concat(result)); 
+            return result == null ? resolve(arr) : reader(s, arr.concat(result));
           });
-        }
+        };
         reader(stream, []);
       });
     });
   };
 };
+
+var modes = require('js-git/lib/modes');
 
 var initializeRepo = function(repo) {
   require('js-git/mixins/mem-db')(repo);

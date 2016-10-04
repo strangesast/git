@@ -1,0 +1,59 @@
+template
+  div.workspace
+    h1 Build Workspace
+  
+    div
+      h2 Jobs
+      .list
+      template#job-template
+        .list-item
+          span { model:name }
+          button.remove Remove
+  
+      form(action='/api/jobs/', method='post')
+        label Name
+          br
+          input(name='name', placeholder='name', type='text')
+        button(type='submit') Create
+  
+    div
+      h2 Phases
+      .list
+      template#phase-template
+        .list-item
+          span { model:name }
+          button.remove Remove
+  
+      form(action='/api/phases/', method='post')
+        label Name
+          br
+          input(name='name', placeholder='name', type='text')
+        button(type='submit') Create
+  
+    div
+      h2 Buildings
+      .list
+      template#building-template
+        .list-item
+          span { model:name }
+          button.remove Remove
+  
+      form(action='/api/buildings/', method='post')
+        label Name
+          br
+          input(name='name', placeholder='name', type='text')
+        button(type='submit') Create
+
+    div
+      h2 Components
+      .list
+      template#component-template
+        .list-item
+          span { model:name }
+          button.remove Remove
+  
+      form(action='/api/components/', method='post')
+        label Name
+          br
+          input(name='name', placeholder='name', type='text')
+        button(type='submit') Create
