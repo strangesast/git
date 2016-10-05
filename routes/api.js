@@ -74,8 +74,7 @@ router.route('/:name/:id?')
 })
 .all(function(req, res, next) {
   if(!req.user) {
-    //next({status: 401, message: 'unauthorized'});
-    return next();
+    next({status: 401, message: 'unauthorized'});
   }
   return next();
 })

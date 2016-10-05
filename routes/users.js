@@ -12,15 +12,6 @@ var router = express.Router();
 
 var iface = require('../resources/interface');
 
-router.get('/', function(req, res, next) {
-  // if not logged in redirect to login
-  if(!req.user) {
-    return res.redirect(path.join(req.originalUrl, '/login'));
-  }
-  // display current user's information, list jobs, etc
-  return res.render('pages/user/index', {user: req.user});
-});
-
 router.get('/register', function(req, res, next) {
   if(req.user) return res.redirect('/app/user');
   return res.redirect('/app/user/login');
@@ -85,6 +76,20 @@ router.get('/logout', function(req, res, next) {
   return res.redirect('/app/');
 });
 
+router.get('/', function(req, res, next) {
+  // if not logged in redirect to login
+  if(!req.user) {
+    return res.redirect(path.join(req.originalUrl, '/login'));
+  }
+  // display current user's information, list jobs, etc
+  Job.find({owner: req.user._id}).then(function(jobs) {
+    res.render('pages/user/index', {user: req.user, jobs: jobs});
+
+  }).catch(function(err) {
+    next(err);
+  });
+});
+
 router.get('/:id', function(req, res, next) {
   // list user with id, redirect to /user if logged in as that user
   var id = req.params.id;
@@ -92,31 +97,26 @@ router.get('/:id', function(req, res, next) {
     // is it an id? redirect to username
     if(req.user && req.user._id === id) return res.redirect('/app/user');
     return Account.findById(id).then(function(doc) {
-      if(doc == null) {
-        res.status(404);
-        return res.render('error', {
-          error: new Error('not found')
-        });
-      }
-      return res.redirect('/app/user/' + encodeURIComponent(doc.username));
+      if(doc == null) return next({status: 404, error: new Error('not found')});
+
+      res.redirect('/app/user/' + encodeURIComponent(doc.username));
 
     }).catch(function(err) {
-      return next(err);
+      next(err);
+
     });
   } else {
     // assume it's a username
-    return Account.findOne({username: id}).then(function(doc) {
-      if(doc == null) {
-        res.status(404);
-        return res.render('error', {error: new Error('not found')});
-      }
-      if(req.user && req.user.username === doc.username) {
-        return res.redirect('/app/user');
-      }
-      return res.render('pages/user/each', {user: doc});
+    return Account.findOne({username: id}).then(function(user) {
+      if(user == null) return next({status: 404, error: new Error('not found')});
+      if(req.user && req.user.username === user.username) return res.redirect('/app/user');
+
+      return Job.find({owner: user._id}).then(function(jobs) {
+        res.render('pages/user/each', {user: user, jobs: jobs});
+      });
 
     }).catch(function(err) {
-      return next(err);
+      next(err);
 
     });
   }

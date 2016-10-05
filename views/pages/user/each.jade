@@ -5,3 +5,16 @@ block workspace
   span=user._id
   h3 User page
 
+  h1 Jobs 
+
+  if jobs.length
+    each job in jobs
+      div
+        a(href='/app/build/#{job._id}')
+          h3=job.name
+        p Created #{job.createdAt}
+
+    a(href='/app/user/#{user.username}/jobs') All jobs
+
+  else
+    p No jobs.

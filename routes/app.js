@@ -40,7 +40,7 @@ router.get('/', function(req, res, next) {
       return a.updatedAt > b.updatedAt ? -1 : 1;
     }).slice(0, 10);
   });
-  Promise.all([iface.Job.find({}), recentPromise]).then(function(arr) {
+  Promise.all([iface.Job.find({}).populate('owner'), recentPromise]).then(function(arr) {
     var docs = arr[0];
     var recent = arr[1];
     console.log(recent);

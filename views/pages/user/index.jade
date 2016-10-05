@@ -9,3 +9,16 @@ block workspace
     h1 You are not logged in.
 
     a(href='/app/user/login') Log in
+
+  h1 Your jobs
+
+  if jobs.length
+    each job in jobs
+      div
+        a(href='/app/build/#{job._id}')
+          h3=job.name
+        p Created #{job.createdAt}
+  else
+    p No jobs.
+
+  a(href='/app/build/') Create new job

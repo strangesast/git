@@ -69,39 +69,13 @@ router.get('/:username/:shortname', function(req, res, next) {
         data.job = job;
         data.tree = all[1].tree;
         data.included = all[1].included;
+        data.user = req.user;
         res.render('pages/build/job', data);
       });
     });
   }).catch(function(err) {
     return next(err);
   });
-  /*
-  iface.Account.findOne({username: username}).then(function(user) {
-    if(user == null) return next({status: 404, error: new Error('not found')});
-
-    return iface.Job.findOne({owner: user._id, shortname: shortname.split('_').join(' ')}).then(function(job) {
-      if(job == null) return next({status: 404, error: new Error('not found')});
-
-      var q = {job: job._id};
-      var names = ['phases', 'buildings', 'components'];
-      return Promise.all(names.map((n)=>iface.nameToModel(n)
-            .find(q)
-            .populate('parent', 'name')
-            .populate('phase', 'name')
-            .populate('building', 'name')
-            )).then(function(arr) {
-        var result = {};
-        names.forEach((n, i)=>{
-          result[n] = arr[i];
-        });
-        result.job = job;
-        res.render('pages/build/job', result);
-      });
-    });
-  }).catch(function(err) {
-    return next(err);
-  });
-  */
 });
 
 
