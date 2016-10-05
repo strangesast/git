@@ -6,6 +6,13 @@ block workspace
   p=job.description
 
   div
+    h1 Tree
+    each branch in tree
+      div(level=branch.level)
+        span #{branch.level} #{branch.type} #{included[branch['type'] + 's'][branch['_id']].name}
+
+  div
+    h1 Components
     h2 Phases
     if phases.length
       each phase in phases

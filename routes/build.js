@@ -45,8 +45,37 @@ router.get('/:username/:id', function(req, res, next) {
 });
 
 router.get('/:username/:shortname', function(req, res, next) {
-  var shortname = req.params.shortname;
+  var shortname = req.params.shortname.split('_').join(' ');;
   var username = req.params.username;
+
+  iface.Account.findOne({username: username}).then(function(user) {
+    if(user == null) return next({status: 404, error: new Error('not found')});
+    return iface.Job.findOne({owner: user._id, shortname: shortname}).then(function(job) {
+      if(job == null) return next({status: 404, error: new Error('not found')});
+
+
+      var treePromise = iface.buildTree(job._id);
+      var allPromise = Promise.all([Phase, Building, Component].map((m)=>m
+        .find({job: job._id})
+        .populate('parent', 'name')
+        .populate('phase', 'name')
+        .populate('building', 'name')
+      )).then(function(arr) {
+        return {phases: arr[0], buildings: arr[1], components: arr[2]};
+      });
+
+      Promise.all([allPromise, treePromise]).then(function(all) {
+        var data = all[0];
+        data.job = job;
+        data.tree = all[1].tree;
+        data.included = all[1].included;
+        res.render('pages/build/job', data);
+      });
+    });
+  }).catch(function(err) {
+    return next(err);
+  });
+  /*
   iface.Account.findOne({username: username}).then(function(user) {
     if(user == null) return next({status: 404, error: new Error('not found')});
 
@@ -72,6 +101,7 @@ router.get('/:username/:shortname', function(req, res, next) {
   }).catch(function(err) {
     return next(err);
   });
+  */
 });
 
 

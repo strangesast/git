@@ -6,3 +6,11 @@ body {
 a {
   color: #00B7FF;
 }
+
+.generate-levels(10);
+.generate-levels(@n, @i: 0) when(@i =< @n) {
+  [level='@{i}'] {
+    margin-left: @i * 20px;
+  }
+  .generate-levels(@n, (@i + 1));
+}
