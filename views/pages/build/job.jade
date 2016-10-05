@@ -12,7 +12,7 @@ block workspace
         div
           h3=phase.name
           p Parent: #{phase.parent ? phase.parent.name : 'null'}
-          span Description
+          span Description:
           if phase.description
             p=phase.description
           else
@@ -45,6 +45,8 @@ block workspace
       each building in buildings
         div
           h3=building.name
+          p Parent: #{building.parent ? building.parent.name : 'null'}
+          span Description:
           if building.description
             p=building.description
           else
@@ -78,6 +80,11 @@ block workspace
       each component in components
         div
           h3=component.name
+          p Parent: #{component.parent ? component.parent.name : 'null'}
+          p Phase: #{component.phase ? component.phase.name : 'null'}
+          p Building: #{component.building ? component.building.name : 'null'}
+
+          span Description:
           if component.description
             p=component.description
           else

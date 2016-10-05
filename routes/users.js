@@ -120,6 +120,25 @@ router.get('/:id', function(req, res, next) {
   }
 });
 
+router.get('/:id/jobs', function(req, res, next) {
+  if(!ObjectId.isValid(req.params.id)) return next();
+  iface.Account.findById(req.params.id).then(function(doc) {
+    if(doc == null) return next({status: 404, error: new Error('not found')});
+    res.redirect(path.join('/app/user/', doc.username, '/jobs'));
+  }).catch(function(err) {
+    next(err);
+  });
+});
+
+router.get('/:username/jobs', function(req, res, next) {
+  iface.Account.findOne({username: req.params.username}).then(function(user) {
+    if(user == null) return next({status: 404, error: new Error('not found')});
+    iface.Job.find({owner: user._id}).then(function(docs) {
+      res.render('pages/user/jobs', {jobs: docs, user: user});
+    });
+  });
+});
+
 // temporary, remove all accounts
 router.delete('/', function(req, res, next) {
   //if(!req.user) {
