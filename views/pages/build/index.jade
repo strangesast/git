@@ -9,7 +9,8 @@ block workspace
       .list.jobs-list
         each job in jobs
           .list-item
-            h3 #{ job.name } (#{ job.shortname })
+            a(href='/app/build/#{job._id}')
+              h3 #{ job.name } (#{ job.shortname })
             p=(job.description || '(no description)')
   
       template#jobs-template

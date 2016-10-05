@@ -3,7 +3,9 @@ extends ../nav_workspace
 block workspace
   h1 Home
 
-  h3 Recent Jobs
+  a(href='/app/build/') Create new job
+
+  h2 Recent Jobs
   if jobs.length
     each job in jobs
       div
@@ -20,5 +22,19 @@ block workspace
   else
     p No jobs.
 
-  a(href='/app/build/')
-    h2 Create new
+  h2 Recent Objects
+  if recent.length
+    each obj in recent
+      div
+        h4 #{obj.name} <small>#{obj.type}</small>
+        p from 
+          a(href='/app/build/#{obj.job._id}') #{obj.job.name}
+        if obj.description
+          p=obj.description
+        else
+          p
+            i (no description)
+  else
+    p Nothing recent.
+
+

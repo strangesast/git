@@ -25,8 +25,29 @@ router.get('/' + WORKER_FILENAME, function(req, res, next) {
 // temporary
 router.get('/', function(req, res, next) {
   //res.redirect(req.originalUrl + 'build/jobs');
-  iface.Job.find({}).populate('owner').then(function(jobs) {
-    res.render('pages/index/index', {jobs: jobs});
+  var types = [ 
+    'phase',
+    'building',
+    'component'
+  ];
+  var recentPromise = Promise.all(types.map((m)=>iface.nameToModel(m).find({}).sort({ updatedAt: 1 }).limit(10).populate('job'))).then(function(arr) {
+    return arr.map(function(models, i) {
+      return models.map((el)=>{
+        el.type = types[i];
+        return el;
+      });
+    }).reduce((a, b)=>a.concat(b)).sort(function(a, b) {
+      return a.updatedAt > b.updatedAt ? -1 : 1;
+    }).slice(0, 10);
+  });
+  Promise.all([iface.Job.find({}), recentPromise]).then(function(arr) {
+    var docs = arr[0];
+    var recent = arr[1];
+    console.log(recent);
+    res.render('pages/index/index', {jobs: docs, recent: recent});
+    
+  }).catch(function(err) {
+    next(err);
   });
 });
 
