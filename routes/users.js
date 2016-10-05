@@ -10,6 +10,8 @@ var Account = require('../models/account');
 var upload = multer();
 var router = express.Router();
 
+var iface = require('../resources/interface');
+
 router.get('/', function(req, res, next) {
   // if not logged in redirect to login
   if(!req.user) {

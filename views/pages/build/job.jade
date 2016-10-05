@@ -7,9 +7,12 @@ block workspace
 
   div
     h1 Tree
-    each branch in tree
-      div(level=branch.level)
-        span #{branch.level} #{branch.type} #{included[branch['type'] + 's'][branch['_id']].name}
+    if tree.length
+      each branch in tree
+        div(level=branch.level)
+          span #{branch.level} #{branch.type} #{included[branch['type'] + 's'][branch['_id']].name}
+    else
+      p Tree empty.
 
   div
     h1 Components

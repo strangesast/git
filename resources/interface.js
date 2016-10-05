@@ -81,8 +81,8 @@ var iface = {
         var getPhaseDescendants = getDescendants(arr[0]);
         var getBuildingDescendants = getDescendants(arr[1]);
 
-
         var components = arr[2];
+
         var recurse = function(currentRootPhase, currentRootBuilding, level, phaseEnabled, buildingEnabled, componentEnabled, phaseDescendants, buildingDescendants) {
           if(phaseDescendants == null) phaseDescendants = true;
           if(buildingDescendants == null) buildingDescendants = true;
@@ -124,21 +124,14 @@ var iface = {
                 }
               } else if (componentEnabled) {
                 building = {'_id':currentRootBuilding};
-                // phase and component enabled
+                var descendants;
                 if(buildingDescendants) {
-                  let descendants = getBuildingDescendants(building).map((el)=>el._id);
-                  for(var k=0; component=components[k], k < components.length; k++) {
-                    if(bool(component.phase, phase._id) && bool(component.building, descendants)) {
-                      tree.push({type: 'component', _id: component._id, level: level+1});
-                      if(!(component._id in included.components)) included.components[component._id] = component;
-                    }
-                  }
-                } else {
-                  for(var k=0; component=components[k], k < components.length; k++) {
-                    if(bool(component.phase, phase._id) && bool(component.building, building._id)) {
-                      tree.push({type: 'component', _id: component._id, level: level+1});
-                      if(!(component._id in included.components)) included.components[component._id] = component;
-                    }
+                  descendants = getBuildingDescendants(building).map((el)=>el._id);
+                }
+                for(var k=0; component=components[k], k < components.length; k++) {
+                  if(bool(component.phase, phase._id) && bool(component.building, descendants || building._id)) {
+                    tree.push({type: 'component', _id: component._id, level: level+1});
+                    if(!(component._id in included.components)) included.components[component._id] = component;
                   }
                 }
               }
@@ -151,20 +144,14 @@ var iface = {
               if(!(building._id in included.buildings)) included.buildings[building._id] = building;
 
               if(componentEnabled) {
+                var descendants;
                 if(phaseDescendants) {
-                  let descendants = getPhaseDescendants(phase).map((el)=>el._id);
-                  for(var k=0; component=components[k], k < components.length; k++) {
-                    if(bool(component.phase, descendants) && bool(component.building, building._id)) {
-                      tree.push({type: 'component', _id: component._id, level: level+1});
-                      if(!(component._id in included.components)) included.components[component._id] = component;
-                    }
-                  }
-                } else {
-                  for(var k=0; component=components[k], k < components.length; k++) {
-                    if(bool(component.phase, phase._id) && bool(component.building, building._id)) {
-                      tree.push({type: 'component', _id: component._id, level: level+1});
-                      if(!(component._id in included.components)) included.components[component._id] = component;
-                    }
+                  descendants = getPhaseDescendants(phase).map((el)=>el._id);
+                }
+                for(var k=0; component=components[k], k < components.length; k++) {
+                  if(bool(component.phase, descendants || phase._id) && bool(component.building, building._id)) {
+                    tree.push({type: 'component', _id: component._id, level: level+1});
+                    if(!(component._id in included.components)) included.components[component._id] = component;
                   }
                 }
               }
@@ -186,7 +173,7 @@ var iface = {
             }
           }
         }
-        recurse(rootPhaseId, rootBuildingId, 0, false, true, true);
+        recurse(rootPhaseId, rootBuildingId, 0, true, true, true);
 
         return {tree: tree, included: included};
       });
