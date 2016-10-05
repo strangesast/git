@@ -62,35 +62,41 @@ var iface = {
         var included = {phases: {}, buildings: {}, components: {}};
         var tree = [];
 
+        var bool = function(element, values) {
+          if(Array.isArray(values)) return element instanceof ObjectId ? values.some((v)=>element.equals(v)) : values.some((v)=>v==element);
+          return element instanceof ObjectId ? element.equals(values) : element == values;
+        }
 
         var components = arr[2];
         var recurse = function(currentRootPhase, currentRootBuilding, level, phaseEnabled, buildingEnabled, componentEnabled, phaseDescendants, buildingDescendants) {
+          //phaseDescendants = !phaseEnabled && phaseDescendants;
+          //buildingDescendants = !buildingEnabled && buildingDescendants;
           if(phaseEnabled) {
             var phases = arr[0].filter(function(p) {
-              return p['parent'] instanceof ObjectId ? p['parent'].equals(currentRootPhase) : p['parent'] == currentRootPhase;
+              return bool(p.parent, currentRootPhase);
             });
           }
           if(buildingEnabled) {
             var buildings = arr[1].filter(function(b) {
-              return b['parent'] instanceof ObjectId ? b['parent'].equals(currentRootBuilding) : b['parent'] == currentRootBuilding;
+              return bool(b.parent, currentRootBuilding);
             });
           }
 
-
+          var phase, building, component;
           if(phaseEnabled) {
-            for(var i=0, phase; phase=phases[i], i < phases.length; i++) {
+            for(var i=0; phase=phases[i], i < phases.length; i++) {
               tree.push({type: 'phase', _id: phase._id, level: level});
               if(!(phase._id in included.phases)) included.phases[phase._id] = phase;
 
               if(buildingEnabled) {
-                for(var j=0, building; building=buildings[j], j < buildings.length; j++) {
+                for(var j=0; building=buildings[j], j < buildings.length; j++) {
                   tree.push({type: 'building', _id: building._id, level: level+1});
                   if(!(building._id in included.buildings)) included.buildings[building._id] = building;
 
                   if(componentEnabled) {
                     // phase, building, and component enabled
-                    for(var k=0, component; component=components[k], k < components.length; k++) {
-                      if(component.phase == phase._id && component.building == building._id) {
+                    for(var k=0; component=components[k], k < components.length; k++) {
+                      if(bool(component.phase, phase._id) && bool(component.building, building._id)) {
                         tree.push({type: 'component', _id: component._id, level: level+2});
                         if(!(component._id in included.components)) included.components[component._id] = component;
                       }
@@ -99,9 +105,10 @@ var iface = {
                   recurse(phase._id, building._id, level+1, false, buildingEnabled, componentEnabled);
                 }
               } else if (componentEnabled) {
+                building = {'_id':currentRootBuilding};
                 // phase and component enabled
-                for(var k=0, component; component=components[k], k < components.length; k++) {
-                  if(component.phase == phase._id && component.building == currentRootBuilding) {
+                for(var k=0; component=components[k], k < components.length; k++) {
+                  if(bool(component.phase, phase._id) && bool(component.building, building._id)) {
                     tree.push({type: 'component', _id: component._id, level: level+2});
                     if(!(component._id in included.components)) included.components[component._id] = component;
                   }
@@ -110,14 +117,15 @@ var iface = {
               recurse(phase._id, currentRootBuilding, level+1, phaseEnabled, buildingEnabled, componentEnabled);
             }
           } else if (buildingEnabled) {
-            for(var j=0, building; building=buildings[j], j < buildings.length; j++) {
+            phase = {'_id':currentRootPhase};
+            for(var j=0; building=buildings[j], j < buildings.length; j++) {
               tree.push({type: 'building', _id: building._id, level: level+1});
               if(!(building._id in included.buildings)) included.buildings[building._id] = building;
 
               if(componentEnabled) {
-                for(var k=0, component; component=components[k], k < components.length; k++) {
-                  if(component.phase == currentRootPhase && component.building == building._id) {
-                    tree.push({type: 'component', _id: component._id, level: level+2});
+                for(var k=0; component=components[k], k < components.length; k++) {
+                  if(bool(component.phase, phase._id) && bool(component.building, building._id)) {
+                    tree.push({type: 'component', _id: component._id, level: level});
                     if(!(component._id in included.components)) included.components[component._id] = component;
                   }
                 }
@@ -125,15 +133,17 @@ var iface = {
               recurse(currentRootPhase, building._id, 1, phaseEnabled, buildingEnabled, componentEnabled);
             }
           } else if (componentEnabled) {
-            for(var k=0, component; component=components[k], k < components.length; k++) {
-              if(component.phase == currentRootPhase && component.building == currentRootBuilding) {
-                tree.push({type: 'component', _id: component._id, level: level+2});
+            phase = {'_id':currentRootPhase};
+            building = {'_id':currentRootBuilding};
+            for(var k=0; component=components[k], k < components.length; k++) {
+              if(bool(component.phase, phase._id) && bool(component.building, building._id)) {
+                tree.push({type: 'component', _id: component._id, level: level});
                 if(!(component._id in included.components)) included.components[component._id] = component;
               }
             }
           }
         }
-        recurse(rootPhaseId, rootBuildingId, 0, false, true, true);
+        recurse(rootPhaseId, rootBuildingId, 0, true, true, true);
 
         return {tree: tree, included: included};
       });
