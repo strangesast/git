@@ -6,6 +6,8 @@ var mongoose = require('mongoose');
 var router = express.Router();
 mongoose.Promise = global.Promise;
 
+var iface = require('../resources/interface');
+
 var Job = require('../models/job');
 var Component = require('../models/component');
 var Phase = require('../models/phase');
@@ -125,16 +127,27 @@ router.route('/:name/:id?')
 
 router.route('/:name1/:id1/:name2')
 .all(function(req, res, next) {
-  if(req.params.name1 !== 'jobs') return next(); // eventually, not yet support this
+  if(req.params.name1 !== 'jobs') return next('route'); // eventually, not yet support this
   var Model1 = nameToModel(req.params.name1);
   var id1 = req.params.id1;
   Model1.findById(id1).then(function(doc) {
     if(doc == null) return next({status: 404, error: new Error('not found')});
-    var Model2 = nameToModel(req.params.name2);
     req.parentDoc = doc;
+    if(req.params.name2 == 'tree') return next();
+    var Model2 = nameToModel(req.params.name2);
     req.Model = Model2;
-    next();
+    next('route');
+  }).catch(function(err) {
+    next(err);
   });
+}, function(req, res, next) {
+  if(req.params.name2 == 'tree') {
+    return iface.buildTree(req.parentDoc._id).then(function(tree) {
+      return res.json(tree);
+    });
+  } else {
+    return next();
+  }
 })
 .get(function(req, res, next) {
   var par = req.parentDoc;

@@ -54,7 +54,11 @@ router.get('/:username/:shortname', function(req, res, next) {
       if(job == null) return next({status: 404, error: new Error('not found')});
 
 
-      var treePromise = iface.buildTree(job._id);
+      var options = {};
+      for(var prop in req.query) {
+        if(!isNaN(req.query[prop])) options[prop] = Number(req.query[prop]);
+      }
+      var treePromise = iface.buildTree(job._id, null, null, options);
       var allPromise = Promise.all([Phase, Building, Component].map((m)=>m
         .find({job: job._id})
         .populate('parent', 'name')
