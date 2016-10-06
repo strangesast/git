@@ -55,36 +55,36 @@ router.use('/user', users); // offload login stuff
 
 router.use('/build', build); // offload build stuff
 
-router.get('/:pageName$', function(req, res, next) {
-  if(VALID_PAGES.indexOf(req.params.pageName) === -1) return next();
-  res.redirect(req.originalUrl + '/');
-});
+//router.get('/:pageName$', function(req, res, next) {
+//  if(VALID_PAGES.indexOf(req.params.pageName) === -1) return next();
+//  res.redirect(req.originalUrl + '/');
+//});
 
-router.get('/:pageName/*', function(req, res, next) {
-  console.log(req.param.pageName);
-  var pageName = req.params.pageName || 'index';
-  console.log(pageName);
-  if(VALID_PAGES.indexOf(pageName) === -1) return next();
-  if(!req.accepts('html')) {
-    return next();
-  }
-
-  iface.getData().then(function(data) {
-    return res.render('pages/'+pageName+'/page', {data : data});
-  });
-});
-
-router.get('/:pageName?/', function(req, res, next) {
-  var pageName = req.params.pageName || 'index';
-  if(VALID_PAGES.indexOf(pageName) === -1) return next();
-  if(!req.accepts('json')) {
-    return next();
-  }
-  res.setHeader('Content-Type', 'application/json');
-  return res.render('pages/'+pageName+'/template', function(err, html) {
-    if(err) return next(err);
-    return res.json({template: html});
-  });
-});
+//router.get('/:pageName/*', function(req, res, next) {
+//  console.log(req.param.pageName);
+//  var pageName = req.params.pageName || 'index';
+//  console.log(pageName);
+//  if(VALID_PAGES.indexOf(pageName) === -1) return next();
+//  if(!req.accepts('html')) {
+//    return next();
+//  }
+//
+//  iface.getData().then(function(data) {
+//    return res.render('pages/'+pageName+'/page', {data : data});
+//  });
+//});
+//
+//router.get('/:pageName?/', function(req, res, next) {
+//  var pageName = req.params.pageName || 'index';
+//  if(VALID_PAGES.indexOf(pageName) === -1) return next();
+//  if(!req.accepts('json')) {
+//    return next();
+//  }
+//  res.setHeader('Content-Type', 'application/json');
+//  return res.render('pages/'+pageName+'/template', function(err, html) {
+//    if(err) return next(err);
+//    return res.json({template: html});
+//  });
+//});
 
 module.exports = router;

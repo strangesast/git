@@ -2,6 +2,8 @@ var express = require('express');
 var util = require('util');
 var path = require('path');
 var mongoose = require('mongoose');
+var ObjectId = mongoose.Types.ObjectId;
+var mysql = require('mysql');
 
 var router = express.Router();
 mongoose.Promise = global.Promise;
@@ -9,9 +11,10 @@ mongoose.Promise = global.Promise;
 var iface = require('../resources/interface');
 
 var Job = require('../models/job');
-var Component = require('../models/component');
 var Phase = require('../models/phase');
 var Building = require('../models/building');
+var Component = require('../models/component');
+var PartRef = require('../models/partref');
 
 var nameToModel = function(name) {
   var Model;
@@ -43,6 +46,38 @@ var defaultReturn = function(fn, ctx) {
     return fn.call(ctx, result);
   };
 };
+
+var connection = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: 'russell',
+  database: 'core_development'
+});
+
+connection.connect(function(err) {
+  if(err) throw err;
+  console.log('Connected to mysql db');
+});
+
+var props = ['version_id', 'number', 'description', 'summary', 'type', 'price', 'list_price'];
+
+router.get('/catalog/:version_id?', function(req, res, next) {
+  var qstring;
+  var qarr = [];
+  var single = false;
+  if(req.params.version_id) {
+    qstring = 'SELECT ' + props.join(', ') + ' FROM core_development.part_catalogs where version_id = ?';
+    qarr = [req.params.version_id];
+    single = true;
+  } else {
+    qstring = 'SELECT ' + props.join(', ') + ' FROM core_development.part_catalogs where purchaseable=1 && active=1' + (req.query.q ? ' && description like ? ' : ' ') + 'limit 10';
+    qarr = [req.query.q];
+  }
+  connection.query(qstring, qarr, function(err, rows, fields) {
+    if(err) next(err);
+    res.json(!single ? rows : rows.length ? rows[0] : null);
+  });
+});
 
 router.get('/', function(req, res, next) {
   var rs = mongoose.connection.readyState;
@@ -125,6 +160,51 @@ router.route('/:name/:id?')
   return request.then(defaultReturn(res.json, res)).catch(defaultReturn(next));
 });
 
+router.get('/components/:id/parts', function(req, res, next) {
+  var id = req.params.id;
+  if(!ObjectId.isValid(id)) return next();
+  Component.findById(id).populate('parts').then(function(component) {
+    res.json(component.parts);
+  });
+});
+
+router.post('/components/:id/parts', function(req, res, next) {
+  var id = req.params.id;
+  var body = req.body;
+  if(!ObjectId.isValid(id)) return next();
+  Component.findById(id).then(function(component) {
+    if(component == null) return next({status: 404, error: new Error('not found')});
+
+    var partref = new PartRef(body);
+    return partref.save().then(function(doc) {
+      return Component.findByIdAndUpdate(component._id, {$push: {'parts': doc._id}}).then(function(result) {
+        if(req.get('Content-Type') === 'application/x-www-form-urlencoded') { // temporary
+          return res.redirect(path.join('/app/build/', String(component.job), '#' + component._id + '-parts'));
+        }
+        res.json(result);
+      });
+    });
+  }).catch(function(err) {
+    next(err);
+  });
+});
+
+router.delete('/components/:id/parts', function(req, res, next) {
+  var id = req.params.id;
+  var body = req.body;
+  if(!ObjectId.isValid(id)) return next();
+  Component.findById(id).then(function(component) {
+    if(component == null) return next({status: 404, error: new Error('not found')});
+    return PartRef.remove({'_id' : { '$in': component.parts }}).then(function(result) {
+      res.json(result);
+
+    });
+  }).catch(function(err) {
+    next(err);
+  });
+});
+
+
 router.route('/:name1/:id1/:name2')
 .all(function(req, res, next) {
   if(req.params.name1 !== 'jobs') return next('route'); // eventually, not yet support this
@@ -133,21 +213,18 @@ router.route('/:name1/:id1/:name2')
   Model1.findById(id1).then(function(doc) {
     if(doc == null) return next({status: 404, error: new Error('not found')});
     req.parentDoc = doc;
-    if(req.params.name2 == 'tree') return next();
-    var Model2 = nameToModel(req.params.name2);
-    req.Model = Model2;
-    next('route');
+    if(req.params.name2 == 'tree') {
+      return iface.buildTree(doc._id).then(function(tree) {
+        return res.json(tree);
+      });
+    } else {
+      var Model2 = nameToModel(req.params.name2);
+      req.Model = Model2;
+      next();
+    }
   }).catch(function(err) {
     next(err);
   });
-}, function(req, res, next) {
-  if(req.params.name2 == 'tree') {
-    return iface.buildTree(req.parentDoc._id).then(function(tree) {
-      return res.json(tree);
-    });
-  } else {
-    return next();
-  }
 })
 .get(function(req, res, next) {
   var par = req.parentDoc;

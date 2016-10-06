@@ -19,7 +19,7 @@ block workspace
     h2 Phases
     if phases.length
       each phase in phases
-        div
+        div(id=phase._id)
           h3=phase.name
           p Parent: #{phase.parent ? phase.parent.name : 'null'}
           span Description:
@@ -54,7 +54,7 @@ block workspace
     h2 Buildings
     if buildings.length
       each building in buildings
-        div
+        div(id=building._id)
           h3=building.name
           p Parent: #{building.parent ? building.parent.name : 'null'}
           span Description:
@@ -90,7 +90,7 @@ block workspace
     h2 Components
     if components.length
       each component in components
-        div
+        div(id=component._id)
           h3=component.name
           p Parent: #{component.parent ? component.parent.name : 'null'}
           p Phase: #{component.phase ? component.phase.name : 'null'}
@@ -102,9 +102,39 @@ block workspace
           else
             p
               i (no description)
+          p Parts
+          table(id='#{component._id}-parts')
+            tr
+              th Core Part
+              th Name
+              th Description
+              th Qty
+              th Price
+
+            if component.parts.length
+              each part in component.parts
+                tr
+                  td=((part.part in parts) ? parts[part.part].description : part.part)
+                  td=part.name
+                  td=part.description
+                  td=part.qty
+                  td=part.price
+            else
+              tr
+                td No parts
+
+          p Add part
+          form(action='/api/components/#{component._id}/parts', method='post')
+            label Part List
+              input(name='part', list='part-catalog-list')
+            button(type='submit') Submit
 
     else
       p No Components
+
+    datalist#part-catalog-list
+      -for(var part in parts)
+        option(value=part)=parts[part].description
 
     if user && user._id.equals(job.owner)
       form(name='new-component', method='post', action='/api/jobs/#{job._id}/components')

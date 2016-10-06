@@ -24,6 +24,10 @@ var schema = new Schema({
     type: ObjectId,
     ref: 'Component'
   },
+  parts: [{
+    type: ObjectId,
+    ref: 'PartRef'
+  }],
   description: String
 
 }, {timestamps: true});

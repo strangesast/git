@@ -18,9 +18,10 @@ router.get('/', function(req, res, next) {
 
 router.get('/:id', function(req, res, next) {
   if(!ObjectId.isValid(req.params.id)) return next();
+  console.log(req.params.id);
   iface.Job.findById(req.params.id).populate('owner').then(function(doc) {
     if(doc == null) return next({error: new Error('not found'), status: 404});
-    res.redirect(path.join(doc.owner.username, doc.shortname.split(' ').join('_')));
+    res.redirect(path.join('/app/build/', doc.owner.username, doc.shortname.split(' ').join('_')));
 
   }).catch(function(err) {
     next(err);
@@ -59,20 +60,34 @@ router.get('/:username/:shortname', function(req, res, next) {
         if(!isNaN(req.query[prop])) options[prop] = Number(req.query[prop]);
       }
       var treePromise = iface.buildTree(job._id, null, null, options);
+      var partPromise = iface.sqlQuery('SELECT * FROM core_development.part_catalogs where purchaseable=1 && active=1 limit 100').then(function(arr) {
+        var obj = {};
+        var subobj;
+        for(var i=0; i < arr.length; i++) {
+          subobj = {};
+          for(var prop in arr[i]) {
+            subobj[prop] = arr[i][prop];
+          }
+          obj[subobj.version_id] = subobj;
+        }
+        return obj;
+      });
       var allPromise = Promise.all([Phase, Building, Component].map((m)=>m
         .find({job: job._id})
         .populate('parent', 'name')
         .populate('phase', 'name')
         .populate('building', 'name')
+        .populate('parts')
       )).then(function(arr) {
         return {phases: arr[0], buildings: arr[1], components: arr[2]};
       });
 
-      Promise.all([allPromise, treePromise]).then(function(all) {
+      return Promise.all([allPromise, treePromise, partPromise]).then(function(all) {
         var data = all[0];
         data.job = job;
         data.tree = all[1].tree;
         data.included = all[1].included;
+        data.parts = all[2];
         data.user = req.user;
         res.render('pages/build/job', data);
       });

@@ -1,11 +1,13 @@
 var mongoose = require('mongoose');
 var ObjectId = mongoose.Types.ObjectId;
+var mysql = require('mysql');
 
 var Account = require('../models/account');
 var Job = require('../models/job');
-var Component = require('../models/component');
 var Phase = require('../models/phase');
 var Building = require('../models/building');
+var Component = require('../models/component');
+var PartRef = require('../models/partref');
 
 var bool = function(element, values) {
   if(Array.isArray(values)) return element instanceof ObjectId ? values.some((v)=>element.equals(v)) : values.some((v)=>v==element);
@@ -166,6 +168,9 @@ var iface = {
       case 'components':
       case 'component':
         return Component;
+      case 'partrefs':
+      case 'partref':
+        return PartRef;
       default:
         throw new Error('unknown name "'+name+'"');
     }
@@ -175,12 +180,14 @@ var iface = {
   Account: Account,
   Building: Building,
   Component: Component,
+  PartRef: PartRef,
   getData: function() { // temporary
     return Promise.all([
       'jobs',
       'phases',
       'buildings',
-      'components'
+      'components',
+      'partrefs'
     ].map((name)=>{
       return iface.nameToModel(name).find({}).then((docs) => {
         return [name, docs];
@@ -211,6 +218,24 @@ var iface = {
           options.buildingEnabled == null ? true : !!options.buildingEnabled,
           options.componentEnabled == null ? true : !!options.componentEnabled
         );
+      });
+    });
+  },
+  sqlQuery: function(query) {
+    return new Promise(function(resolve, reject) {
+      var connection = mysql.createConnection({
+        host: 'localhost',
+        user: 'root',
+        password: 'russell',
+        database: 'core_development'
+      });
+      
+      connection.connect(function(err) {
+        if(err) throw err;
+        connection.query(query, function(err, rows, fields) {
+          if(err) reject(err);
+          resolve(rows);
+        });
       });
     });
   }
