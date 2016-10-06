@@ -38,8 +38,10 @@ var recurse = function(data) {
 
     if(phaseDescendants == null) phaseDescendants = true;
     if(buildingDescendants == null) buildingDescendants = true;
-    //phaseDescendants = !phaseEnabled && phaseDescendants;
-    //buildingDescendants = !buildingEnabled && buildingDescendants;
+    // doesn't make sense when type is enabled
+    phaseDescendants = !phaseEnabled && phaseDescendants;
+    buildingDescendants = !buildingEnabled && buildingDescendants;
+
     if(phaseEnabled) {
       var phases = data[0].filter(function(p) {
         return bool(p.parent, currentRootPhase);
@@ -58,43 +60,6 @@ var recurse = function(data) {
         tree.push({type: 'phase', _id: phase._id, level: level});
         if(!(phase._id in included.phases)) included.phases[phase._id] = phase;
 
-        if(buildingEnabled) {
-          for(var j=0; building=buildings[j], j < buildings.length; j++) {
-            tree.push({type: 'building', _id: building._id, level: level+1});
-            if(!(building._id in included.buildings)) included.buildings[building._id] = building;
-
-            if(componentEnabled) {
-              // phase, building, and component enabled
-              for(var k=0; component=components[k], k < components.length; k++) {
-                if(bool(component.phase, phase._id) && bool(component.building, building._id)) {
-                  tree.push({type: 'component', _id: component._id, level: level+2});
-                  if(!(component._id in included.components)) included.components[component._id] = component;
-                }
-              }
-            }
-            let both = func(phase._id, building._id, level+1, false, buildingEnabled, componentEnabled, phaseDescendants, buildingDescendants);
-            ['phases', 'buildings', 'components'].forEach(function(type) {
-              for(var prop in both.included[type]) {
-                included[type][prop] = both.included[type][prop];
-              }
-            });
-            both.tree.forEach(function(child) {
-              tree.push(child);
-            });
-          }
-        } else if (componentEnabled) {
-          building = {'_id':currentRootBuilding};
-          var descendants;
-          if(buildingDescendants) {
-            descendants = getBuildingDescendants(building).map((el)=>el._id);
-          }
-          for(var k=0; component=components[k], k < components.length; k++) {
-            if(bool(component.phase, phase._id) && bool(component.building, descendants || building._id)) {
-              tree.push({type: 'component', _id: component._id, level: level+1});
-              if(!(component._id in included.components)) included.components[component._id] = component;
-            }
-          }
-        }
         let both = func(phase._id, currentRootBuilding, level+1, phaseEnabled, buildingEnabled, componentEnabled, phaseDescendants, buildingDescendants);
         ['phases', 'buildings', 'components'].forEach(function(type) {
           for(var prop in both.included[type]) {
@@ -105,25 +70,14 @@ var recurse = function(data) {
           tree.push(child);
         });
       }
-    } else if (buildingEnabled) {
+    }
+    if (buildingEnabled) {
       phase = {'_id':currentRootPhase};
       for(var j=0; building=buildings[j], j < buildings.length; j++) {
         tree.push({type: 'building', _id: building._id, level: level});
         if(!(building._id in included.buildings)) included.buildings[building._id] = building;
 
-        if(componentEnabled) {
-          var descendants;
-          if(phaseDescendants) {
-            descendants = getPhaseDescendants(phase).map((el)=>el._id);
-          }
-          for(var k=0; component=components[k], k < components.length; k++) {
-            if(bool(component.phase, descendants || phase._id) && bool(component.building, building._id)) {
-              tree.push({type: 'component', _id: component._id, level: level+1});
-              if(!(component._id in included.components)) included.components[component._id] = component;
-            }
-          }
-        }
-        let both = func(currentRootPhase, building._id, 1, phaseEnabled, buildingEnabled, componentEnabled, phaseDescendants, buildingDescendants);
+        let both = func(currentRootPhase, building._id, level+1, false, buildingEnabled, componentEnabled, phaseDescendants, buildingDescendants);
         ['phases', 'buildings', 'components'].forEach(function(type) {
           for(var prop in both.included[type]) {
             included[type][prop] = both.included[type][prop];
@@ -133,7 +87,8 @@ var recurse = function(data) {
           tree.push(child);
         });
       }
-    } else if (componentEnabled) {
+    }
+    if (componentEnabled) {
       phase = {'_id':currentRootPhase};
       building = {'_id':currentRootBuilding};
       var pdescendants;
@@ -216,7 +171,9 @@ var iface = {
           0, // starting level
           options.phaseEnabled == null ? true : !!options.phaseEnabled,
           options.buildingEnabled == null ? true : !!options.buildingEnabled,
-          options.componentEnabled == null ? true : !!options.componentEnabled
+          options.componentEnabled == null ? true : !!options.componentEnabled,
+          options.phaseDescendants == null ? false : !!options.phaseDescendants,
+          options.buildingDescendants == null ? false : !!options.buildingDescendants
         );
       });
     });

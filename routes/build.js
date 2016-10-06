@@ -48,6 +48,8 @@ router.get('/:username/:id', function(req, res, next) {
 router.get('/:username/:shortname', function(req, res, next) {
   var shortname = req.params.shortname.split('_').join(' ');;
   var username = req.params.username;
+  var rootPhase = req.query.rootPhase;
+  var rootBuilding = req.query.rootBuilding;
 
   iface.Account.findOne({username: username}).then(function(user) {
     if(user == null) return next({status: 404, error: new Error('not found')});
@@ -59,7 +61,7 @@ router.get('/:username/:shortname', function(req, res, next) {
       for(var prop in req.query) {
         if(!isNaN(req.query[prop])) options[prop] = Number(req.query[prop]);
       }
-      var treePromise = iface.buildTree(job._id, null, null, options);
+      var treePromise = iface.buildTree(job._id, rootPhase || null, rootBuilding || null, options);
       var partPromise = iface.sqlQuery('SELECT * FROM core_development.part_catalogs where purchaseable=1 && active=1 limit 100').then(function(arr) {
         var obj = {};
         var subobj;

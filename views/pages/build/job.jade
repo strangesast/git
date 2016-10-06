@@ -40,7 +40,8 @@ block workspace
     if phases.length
       each phase in phases
         div(id=phase._id)
-          h3=phase.name
+          h3 #{phase.name}
+          small #{phase._id}
           p Parent: #{phase.parent ? phase.parent.name : 'null'}
           span Description:
           if phase.description
@@ -75,7 +76,8 @@ block workspace
     if buildings.length
       each building in buildings
         div(id=building._id)
-          h3=building.name
+          h3 #{building.name}
+          small #{building._id}
           p Parent: #{building.parent ? building.parent.name : 'null'}
           span Description:
           if building.description
@@ -111,7 +113,8 @@ block workspace
     if components.length
       each component in components
         div(id=component._id)
-          h3=component.name
+          h3 #{component.name} 
+          small #{component._id}
           p Parent: #{component.parent ? component.parent.name : 'null'}
           p Phase: #{component.phase ? component.phase.name : 'null'}
           p Building: #{component.building ? component.building.name : 'null'}
