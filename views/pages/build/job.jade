@@ -11,6 +11,9 @@ block workspace
       each branch in tree
         div(level=branch.level)
           span #{branch.level} #{branch.type} #{included[branch['type'] + 's'][branch['_id']].name}
+          if branch.type == 'component'
+            span  (#{included[branch['type'] + 's'][branch['_id']].parts.length} Parts)
+            
     else
       p Tree empty.
 

@@ -37,4 +37,10 @@ block workspace
   else
     p Nothing recent.
 
-
+  h2 Users
+  if users.length
+    each user in users
+      h3 #{user.name} <small>#{user.username}</small>
+      a(href='/app/user/#{user.username}') User page
+  else
+    p No users.

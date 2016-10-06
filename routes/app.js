@@ -40,11 +40,12 @@ router.get('/', function(req, res, next) {
       return a.updatedAt > b.updatedAt ? -1 : 1;
     }).slice(0, 10);
   });
-  Promise.all([iface.Job.find({}).populate('owner'), recentPromise]).then(function(arr) {
+  var userPromise = iface.Account.find({});
+  Promise.all([iface.Job.find({}).populate('owner'), recentPromise, userPromise]).then(function(arr) {
     var docs = arr[0];
     var recent = arr[1];
-    console.log(recent);
-    res.render('pages/index/index', {jobs: docs, recent: recent});
+    var users = arr[2];
+    res.render('pages/index/index', {jobs: docs, recent: recent, users: users});
     
   }).catch(function(err) {
     next(err);
