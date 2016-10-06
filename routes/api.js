@@ -111,7 +111,7 @@ router.route('/:name/:id?')
 })
 .all(function(req, res, next) {
   if(!req.user) {
-    next({status: 401, message: 'unauthorized'});
+    return next({status: 401, message: 'unauthorized'});
   }
   return next();
 })
@@ -119,8 +119,19 @@ router.route('/:name/:id?')
   var id = req.params.id;
   var body = req.body;
   var Model = req.Model;
-  if('owner' in Model.schema.paths) {
+  if('owner' in Model.schema.paths) { // temporary
     body.owner = req.user ? req.user._id : '57f3df8841f7dc76f4a2af4b';
+  }
+  if(id != null || ('_id' in body)) { // temporary
+    body['_id'] = id;
+    return Model.findByIdAndUpdate(body['_id'], {'$set': body}).then(function(result) {
+      if(req.get('Content-Type') === 'application/x-www-form-urlencoded') { // temporary
+        if(Model.modelName == 'Job') {
+          return res.redirect(path.join('/app/build/', id));
+        }
+      }
+      res.json(result);
+    });
   }
   var model = new Model(body);
   model.save().then(function(doc) {
@@ -145,7 +156,9 @@ router.route('/:name/:id?')
   if(id == null) throw new Error('id required for this method');
   var Model = req.Model;
   var model = Model.findById(id);
-  Model.findOneAndUpdate({_id:id}, req.body).then(defaultReturn(res.json, res)).catch(defaultReturn(next));
+  Model.findOneAndUpdate({_id:id}, req.body).then(function(result) {
+    res.json(result);
+  }).catch(defaultReturn(next));
 })
 .delete(function(req, res, next) {
   var id = req.params.id;
@@ -244,7 +257,7 @@ router.route('/:name1/:id1/:name2')
   var model = new Model(body);
   model.save().then(function(doc) {
     if(req.get('Content-Type') === 'application/x-www-form-urlencoded') { // temporary
-      return res.redirect(path.join('/app/build/', String(par._id)));
+      return res.redirect(path.join('/app/build/', String(par._id), '#' + model._id));
     }
     res.json(doc);
 
