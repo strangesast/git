@@ -1,6 +1,34 @@
-extends ../layout
+extends workspace
 
-block content
-  h1 Nav Workspace
+append head
+  link(rel='stylesheet', href='/stylesheets/nav_workspace.css')
 
-  block workspace
+block body
+  .top
+    block top
+
+  .body
+    .navigation
+      .container
+        block navigation
+          .search
+            input(type='text', placeholder='search')
+          .controls
+            .left
+              a.icon(href='#')
+                span.fa.fa-bookmark-o.fa-lg
+                span Phase
+              a.icon(href='#').active
+                span.fa.fa-building-o.fa-lg
+                span Building
+              a.icon(href='#')
+                span.fa.fa-cubes.fa-lg
+                span Component
+
+            .right
+              a.icon(href='#')
+                span.fa.fa-filter.fa-lg
+                span Filters
+
+    .workspace
+      block workspace

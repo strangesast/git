@@ -53,7 +53,7 @@ router.get('/:username/:shortname', function(req, res, next) {
 
   iface.Account.findOne({username: username}).then(function(user) {
     if(user == null) return next({status: 404, error: new Error('not found')});
-    return iface.Job.findOne({owner: user._id, shortname: shortname}).then(function(job) {
+    return iface.Job.findOne({owner: user._id, shortname: shortname}).populate('owner').then(function(job) {
       if(job == null) return next({status: 404, error: new Error('not found')});
 
 

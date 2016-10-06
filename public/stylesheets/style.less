@@ -3,14 +3,45 @@ body {
   font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
 }
 
-a {
-  color: #00B7FF;
-}
+@sml: 400px;
+@med: 600px;
+@lrg: 1200px;
 
-.generate-levels(10);
-.generate-levels(@n, @i: 0) when(@i =< @n) {
-  [level='@{i}'] {
-    margin-left: @i * 20px;
+
+@header-height: 60px;
+
+.header {
+  //background: red;
+  .container {
+    span.title {
+      font-size: 1.75em;
+    }
+    span.site-title, span.user-title {
+      font-size: 1.20em;
+    }
+    display: flex;
+    height: @header-height;
+    align-items: center;
+    justify-content: space-between;
   }
-  .generate-levels(@n, (@i + 1));
+}
+@mp: 0.1; // minimum percentage
+@lrgm: (@lrg * ((2*@mp)*(1 + (2*@mp)) + 1));
+@mp2: @med / ( @med - @sml ) * @mp; // 2nd minimum percentage
+@off: -@med * @sml / ( @med - @sml ) * @mp; // offset for ^
+
+.container {
+  margin: 0 0;
+  // sml -> med
+  @media(min-width: @sml) {
+    margin: 0 ~"calc(" @mp2*100% ~" + " @off ~")";
+  }
+  // med -> lrg
+  @media(min-width: @med) {
+    margin: 0 100%*@mp;
+  }
+  // lrg ->
+  @media(min-width: @lrgm) {
+    margin: 0 ~"calc(50% - " @lrg/2 ~");";
+  }
 }
