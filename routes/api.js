@@ -79,6 +79,13 @@ router.get('/catalog/:version_id?', function(req, res, next) {
   }
   connection.query(qstring, qarr, function(err, rows, fields) {
     if(err) next(err);
+    console.log(req.get('Content-Type'))
+    //if(req.get('Content-Type') === 'application/x-www-form-urlencoded') { // temporary
+    //  if(Model.modelName == 'Job') {
+    //    return res.redirect(path.join('/app/build/', id));
+    //  }
+    //}
+
     res.json(!single ? rows : rows.length ? rows[0] : null);
   });
 });

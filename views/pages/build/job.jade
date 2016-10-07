@@ -12,7 +12,8 @@ block top
 
 block navigation
   .search
-    input(type='text', placeholder='search')
+    form(action='', method='get')
+      input(type='text', name='query', placeholder='search', value=options.query)
   .controls
     .left
       - var classes = ['fa-bookmark-o', 'fa-building-o', 'fa-cubes']
@@ -22,7 +23,7 @@ block navigation
       each kind, i in kinds
         - var other = kinds.filter((k)=>k!=kind)
         - var enabled = options[kind + 'Enabled']
-        - var qstr = other.map((k)=>options[k+'Enabled']!=null && !options[k+'Enabled'] ? k+'Enabled=0' : '').concat(enabled == null || !!enabled ? kind + 'Enabled=0' : '').filter((e)=>e!='').join('&')
+        - var qstr = other.map((k)=>options[k+'Enabled']!=null && !options[k+'Enabled'] ? k+'Enabled=0' : '').concat(enabled == null || !!enabled ? kind + 'Enabled=0' : '', options.query ? 'query=' + options.query : '').filter((e)=>e!='').join('&')
         - var c = classes[i]
         // if last active, disable de-activation
         a.icon(href=(enabled == null || enabled) && cnt == 1 ? false : '?' + qstr, class=enabled==null||enabled?'active':'')
@@ -30,17 +31,29 @@ block navigation
           span=kind[0].toUpperCase()+kind.slice(1)
   
     .right
-      a.icon(href='#')
-        span.fa.fa-filter.fa-lg
-        span Filters
-
+      .dropdown
+        a.icon(href='#')
+          span.fa.fa-filter.fa-lg
+          span Filters
+        .dropdown-body
+          a(href='#')
+            span Option 1
+          a(href='#')
+            span Option 2
+          a(href='#')
+            span Option 3
+          a(href='#')
+            span Option 4
 
 block workspace
   .container
     .search-box
-      .search-result One
-      .search-result Two
-      .search-result Three
+      each result in queryResult
+        div
+          .id #{result.version_id}
+          .description #{result.description}
+          .price List Price: #{result.list_price}
+          .price NYS Price: #{result.nysprice}
       .search-result Four
       .search-result Five
 

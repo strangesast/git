@@ -59,8 +59,13 @@ router.get('/:username/:shortname', function(req, res, next) {
 
       var options = {};
       for(var prop in req.query) {
-        if(!isNaN(req.query[prop])) options[prop] = Number(req.query[prop]);
+        if(!isNaN(req.query[prop])) {
+          options[prop] = Number(req.query[prop]);
+        } else {
+          options[prop] = req.query[prop];
+        }
       }
+      var queryPromise = req.query.query ? iface.sqlQuery('SELECT * FROM core_development.part_catalogs where purchaseable=1 && active=1 && description like ? limit 10', [req.query.query + '%']) : Promise.resolve([]);
       var treePromise = iface.buildTree(job._id, rootPhase || null, rootBuilding || null, options);
       var partPromise = iface.sqlQuery('SELECT * FROM core_development.part_catalogs where purchaseable=1 && active=1 limit 100').then(function(arr) {
         var obj = {};
@@ -84,14 +89,14 @@ router.get('/:username/:shortname', function(req, res, next) {
         return {phases: arr[0], buildings: arr[1], components: arr[2]};
       });
 
-      return Promise.all([allPromise, treePromise, partPromise]).then(function(all) {
+      return Promise.all([allPromise, treePromise, partPromise, queryPromise]).then(function(all) {
         var data = all[0];
         data.job = job;
         data.tree = all[1].tree;
         data.included = all[1].included;
         data.parts = all[2];
         data.user = req.user;
-        console.log(options);
+        data.queryResult = all[3];
         data.options = options;
         res.render('pages/build/job', data);
       });

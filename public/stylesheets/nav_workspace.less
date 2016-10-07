@@ -39,6 +39,48 @@ span.icon {
   text-align: center;
 }
 
+.dropdown {
+  position: relative;
+  background: red;
+  & > *:first-child {
+    float: right;
+  }
+  .dropdown-body {
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+    position: absolute;
+    min-width: 100px;
+    top: 0; // or 100%;
+    right: 0;
+    display: none; //flex;
+    flex-direction: column;
+    align-items: flex-end;
+    background: white;
+    & > * {
+      height: @navigation-height;
+      width: 100%;
+      text-align: right;
+      & > * {
+        padding: 8px;
+        line-height: @navigation-height;
+      }
+      &:hover {
+        background: lightgrey;
+      }
+
+    }
+
+  }
+  &:hover {
+    .dropdown-body {
+      display: flex;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+    }
+  }
+}
+
 .top {
   //background: blue;
 
@@ -77,6 +119,9 @@ span.icon {
       align-items: center;
       width: @search-width;
       position: relative;
+      form {
+        width: 100%;
+      }
       input {
         font-size: 1.5em;
         padding: 4px;
@@ -100,7 +145,7 @@ span.icon {
           display: inline-block;
           padding: 0 6px;
           background: white;
-          span {
+          & > span {
             height: @navigation-height;
             padding: 0 6px;
             line-height: @navigation-height;

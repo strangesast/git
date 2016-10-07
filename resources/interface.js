@@ -178,7 +178,7 @@ var iface = {
       });
     });
   },
-  sqlQuery: function(query) {
+  sqlQuery: function(query, arr) {
     return new Promise(function(resolve, reject) {
       var connection = mysql.createConnection({
         host: 'localhost',
@@ -189,7 +189,7 @@ var iface = {
       
       connection.connect(function(err) {
         if(err) throw err;
-        connection.query(query, function(err, rows, fields) {
+        connection.query(query, arr, function(err, rows, fields) {
           if(err) reject(err);
           resolve(rows);
         });
