@@ -183,11 +183,18 @@ span.icon {
 .body .container {
   display: flex;
   flex-direction: row;
-
+  position: relative;
 
   @media(max-width: @lrg) {
     .search-box {
-      display: none;
+      //display: none;
+      margin-top: -10px;
+      padding-top: 10px;
+      background: white;
+      position: absolute;
+      top: 0;
+      left: 0;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
     }
   }
   @media(min-width: @lrg) {
@@ -202,7 +209,7 @@ span.icon {
   //background: teal;
   .search-result {
     padding: 10px;
-    height: 40px;
+    min-height: @navigation-height
   }
 }
 

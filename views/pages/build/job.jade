@@ -49,7 +49,7 @@ block workspace
   .container
     .search-box
       each result in queryResult
-        div
+        .search-result
           .id #{result.version_id}
           .description #{result.description}
           .price List Price: #{result.list_price}
