@@ -14,7 +14,8 @@ block workspace
         br
         label(for='new-phase-parent-input') Parent
         br
-        select#new-phase-parent-input(name='parent', type='text', value=doc['parent']._id)
+        select#new-phase-parent-input(name='parent', type='text', value=doc['parent'] == null ? 'null' : doc['parent']._id)
+          option(value='null') null
           each phase in objects.phases
             option(value=phase._id)=phase.name
         br

@@ -9,9 +9,20 @@ block content
           span.site-title Estimating
         span.title
           | Title
-        a.icon(href='/app/user')
-          span.fa.fa-user.fa-lg
-          span.user-title User
+        .dropdown.bottom
+          a.icon(href='/app/user')
+            span.fa.fa-user.fa-lg
+            span.user-title User
+          .dropdown-body
+            a(href='#')
+              span Option 1
+            a(href='#')
+              span Option 2
+            a(href='#')
+              span Option 3
+            a(href='#')
+              span Option 4
+
     block body
 
     .footer
