@@ -52,10 +52,12 @@ span.icon {
       height: @top-height;
       //background: yellow;
     }
+    .picture + .information {
+      padding-left: @gutter-size;
+    }
     .information {
       flex-grow: 1;
       //background: orange;
-      padding-left: @gutter-size;
     }
   }
 }
@@ -182,4 +184,26 @@ span.icon {
 
 .footer {
   //background: orange;
+}
+
+.container {
+  .center {
+    width: 300px;
+    min-height: 400px;
+    margin: 100px auto;
+  }
+  .full {
+  }
+}
+
+.login {
+  form {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    label + input, button {
+      font-size: 1.5em;
+      margin-bottom: 10px;
+    }
+  }
 }

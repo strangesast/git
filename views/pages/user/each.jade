@@ -1,20 +1,23 @@
 extends ../full_workspace
 
 block workspace
-  h1 #{user.name} <small>#{user.username}</small>
-  span=user._id
-  h3 User page
+  .container
+    .full
+      h1 #{user.name} <small>#{user.username}</small>
+      span=user._id
 
-  h1 Jobs 
+      h3 User page
 
-  if jobs.length
-    each job in jobs
-      div
-        a(href='/app/build/#{job._id}')
-          h3=job.name
-        p Created #{job.createdAt}
+      h1 Jobs 
 
-    a(href='/app/user/#{user.username}/jobs') All jobs
+      if jobs.length
+        each job in jobs
+          div
+            a(href='/app/build/#{job._id}')
+              h3=job.name
+            p Created #{job.createdAt}
 
-  else
-    p No jobs.
+        a(href='/app/user/#{user.username}/jobs') All jobs
+
+      else
+        p No jobs.

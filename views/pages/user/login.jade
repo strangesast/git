@@ -1,40 +1,29 @@
 extends ../full_workspace
 
 block workspace
-  h1 Login
+  .container
+    .center.login
 
-  form(name='user', action='/app/user/login', method='post')
-    div
-      label(for='username-input') Username
-      input#username-input(name='username', type='username')
-    br
-    div
-      label(for='password-input') Password
-      input#password-input(name='password', type='password')
+      form(name='user', action='/app/user/login', method='post')
+        h1 Login
+        label(for='username-input') Username
+        input#username-input(name='username', type='username')
+        label(for='password-input') Password
+        input#password-input(name='password', type='password')
+        button(type='submit') Submit
 
-    br
+      p or
 
-    button(type='submit') Submit
+      form(name='new-user', action='/app/user/register', method='post')
+        h1 Create User
+        label(for='new-name-input') Name
+        input#new-name-input(name='name', type='text')
+        label(for='new-username-input') Username
+        input#new-username-input(name='username', type='username')
+        label(for='new-password-input') Password
+        input#new-password-input(name='password', type='password')
+        button(type='submit') Submit
 
-
-  h1 Create User
-
-  form(name='new-user', action='/app/user/register', method='post')
-    div
-      label(for='new-name-input') Name
-      input#new-name-input(name='name', type='text')
-    br
-    div
-      label(for='new-username-input') Username
-      input#new-username-input(name='username', type='username')
-    br
-    div
-      label(for='new-password-input') Password
-      input#new-password-input(name='password', type='password')
-
-    br
-    button(type='submit') Submit
-
-    if error
-      h1=error.name
-      pre=error.message
+        if error
+          h1=error.name
+          pre=error.message

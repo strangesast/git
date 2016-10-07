@@ -91,6 +91,8 @@ router.get('/:username/:shortname', function(req, res, next) {
         data.included = all[1].included;
         data.parts = all[2];
         data.user = req.user;
+        console.log(options);
+        data.options = options;
         res.render('pages/build/job', data);
       });
     });

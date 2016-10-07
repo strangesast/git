@@ -36,11 +36,11 @@ var recurse = function(data) {
     var included = {phases: {}, buildings: {}, components: {}};
     var tree = [];
 
-    if(phaseDescendants == null) phaseDescendants = true;
-    if(buildingDescendants == null) buildingDescendants = true;
+    if(!phaseEnabled) phaseDescendants = true;
+    if(!buildingEnabled) buildingDescendants = true;
     // doesn't make sense when type is enabled
-    phaseDescendants = !phaseEnabled && phaseDescendants;
-    buildingDescendants = !buildingEnabled && buildingDescendants;
+    //phaseDescendants = !phaseEnabled && phaseDescendants;
+    //buildingDescendants = !buildingEnabled && buildingDescendants;
 
     if(phaseEnabled) {
       var phases = data[0].filter(function(p) {
