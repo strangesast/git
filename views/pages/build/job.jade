@@ -23,13 +23,13 @@ block navigation
       each kind, i in kinds
         - var other = kinds.filter((k)=>k!=kind)
         - var enabled = options[kind + 'Enabled']
-        - var qstr = other.map((k)=>options[k+'Enabled']!=null && !options[k+'Enabled'] ? k+'Enabled=0' : '').concat(enabled == null || !!enabled ? kind + 'Enabled=0' : '', options.query ? 'query=' + options.query : '').filter((e)=>e!='').join('&')
+        - var qstr = other.map((k)=>options[k+'Enabled']!=null && !options[k+'Enabled'] ? k+'Enabled=0' : '').concat(enabled == null || !!enabled ? kind + 'Enabled=0' : '', options.query ? 'query=' + options.query : '', options.rootPhase ? 'rootPhase=' + options.rootPhase : '', options.rootBuilding ? 'rootBuilding=' + options.rootBuilding : '').filter((e)=>e!='').join('&')
         - var c = classes[i]
         // if last active, disable de-activation
         a.icon(href=(enabled == null || enabled) && cnt == 1 ? false : '?' + qstr, class=enabled==null||enabled?'active':'')
           span(class=c).fa.fa-lg
           span=kind[0].toUpperCase()+kind.slice(1)
-  
+
     .right
       .dropdown
         a.icon(href='#')
@@ -58,12 +58,34 @@ block workspace
       .search-result Five
 
     .tree
+      .tree-filters
+        if options.rootBuilding != null
+          div
+            a(href='?').remove
+              span.fa.fa-close.fa-lg
+            span Buildings 
+            span.fa.fa-angle-right.fa-lg
+            span #{included['buildings'][options.rootBuilding].name}
+
+        if options.rootPhase != null
+          div
+            a(href='?').remove
+              span.fa.fa-close.fa-lg
+            span Phases 
+            span.fa.fa-angle-right.fa-lg
+            span #{included['phases'][options.rootPhase].name}
       if tree.length
         each branch in tree
           - var obj = included[branch['type'] + 's'][branch['_id']]
           div.tree-element(level=branch.level)
             span.icon.fa(class=(branch.type == 'phase' ? 'fa-bookmark-o' : branch.type == 'building' ? 'fa-building-o' : 'fa-cubes'))
-            span.name=obj.name
+            a(href="/app/edit/#{branch.type + 's'}/#{obj._id}").hoverstyle
+              span.name=obj.name
+            if branch.type !== 'component'
+              a(href='?root#{branch.type[0].toUpperCase()+branch.type.slice(1)}=#{obj._id}').nostyle
+                span.fa.fa-angle-right.fa-lg
+            span.spacer
+            span.id=obj._id
             span #{branch.level} #{branch.type} #{obj.name}
             if branch.type == 'component'
               span  (#{included[branch['type'] + 's'][branch['_id']].parts.length} Parts)

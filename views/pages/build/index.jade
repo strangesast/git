@@ -1,38 +1,42 @@
 extends ../nav_workspace
 
-block workspace
-  div.workspace
-    h1 Build Workspace
-  
-    div
-      h2 Jobs
-      .list.jobs-list
-        each job in jobs
-          .list-item
-            a(href='/app/build/#{job._id}')
-              h3 #{ job.name } (#{ job.shortname })
-            p=(job.description || '(no description)')
-  
-      template#jobs-template
-        .list-item
-          h3 { job.name } ({ job.shortname })
-          p { job.description }
+block navigation
+  .navigation
 
-        span { model:name }
-        button.remove Remove
+block workspace
+  .container
+    .full
+      h1 Build Workspace
+  
+      div
+        h2 Jobs
+        .list.jobs-list
+          each job in jobs
+            .list-item
+              a(href='/app/build/#{job._id}')
+                h3 #{ job.name } (#{ job.shortname })
+              p=(job.description || '(no description)')
+  
+        template#jobs-template
+          .list-item
+            h3 { job.name } ({ job.shortname })
+            p { job.description }
+
+          span { model:name }
+          button.remove Remove
   
   
-      form(name='job', action='/api/jobs/', method='post')
-        label Name
+        form(name='job', action='/api/jobs/', method='post')
+          label Name
+            br
+            input(name='name', placeholder='name', type='text', required=true)
           br
-          input(name='name', placeholder='name', type='text', required=true)
-        br
-        label Short Name (optional)
+          label Short Name (optional)
+            br
+            input(name='shortname', placeholder='shortname', type='text', pattern='^[a-zA-Z0-9\-\_ ]{4,21}$', title='4-20 character name with limited character set')
           br
-          input(name='shortname', placeholder='shortname', type='text', pattern='^[a-zA-Z0-9\-\_ ]{4,21}$', title='4-20 character name with limited character set')
-        br
-        label Description
+          label Description
+            br
+            textarea(name='description', placeholder='description...')
           br
-          textarea(name='description', placeholder='description...')
-        br
-        button(type='submit') Create
+          button(type='submit') Create

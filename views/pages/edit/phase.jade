@@ -1,0 +1,25 @@
+extends ../nav_workspace
+
+block navigation
+
+block workspace
+  .container
+    .full
+      h1 Edit Phase
+      pre=doc
+      form(name='new-phase', method='post', action='/api/phases/#{doc._id}')
+        label(for='new-phase-name-input') Name
+        br
+        input#new-phase-name-input(name='name', type='text', value=doc.name)
+        br
+        label(for='new-phase-parent-input') Parent
+        br
+        select#new-phase-parent-input(name='parent', type='text', value=doc['parent']._id)
+          each phase in objects.phases
+            option(value=phase._id)=phase.name
+        br
+        label(for='new-phase-description-textarea') Description
+        br
+        textarea(name='description')=doc.description
+        br
+        button(type='submit') Save

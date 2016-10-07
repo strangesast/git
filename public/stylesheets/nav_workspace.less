@@ -20,6 +20,10 @@ body {
   padding: 0;
 }
 
+.spacer {
+  flex-grow: 1;
+}
+
 a.icon {
   color: inherit;
   text-decoration: none;
@@ -92,7 +96,7 @@ span.icon {
     .picture {
       width: @top-height;
       height: @top-height;
-      //background: yellow;
+      background: black;
     }
     .picture + .information {
       padding-left: @gutter-size;
@@ -212,6 +216,22 @@ span.icon {
       .generate-levels(@n, (@i + 1));
     }
   }
+  .tree-filters {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    & > div {
+      height: @navigation-height;
+      flex-basis: 220px;
+      span {
+        margin: 6px;
+      }
+      .remove {
+        color: inherit;
+        text-decoration: none;
+      }
+    }
+  }
 }
 
 .tree-element {
@@ -221,11 +241,21 @@ span.icon {
   span {
     margin: 0 10px;
   }
+}
 
-  .name {
-    flex-grow: 1;
+a.nostyle {
+  color: inherit;
+  text-decoration: none;
+}
+a.hoverstyle {
+  color: inherit;
+  text-decoration: none;
+  &:hover {
+    text-decoration: underline;
   }
 }
+
+
 
 .footer {
   //background: orange;

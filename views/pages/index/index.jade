@@ -1,46 +1,48 @@
-extends ../nav_workspace
+extends ../full_workspace
 
 block workspace
-  h1 Home
+  .container
+    .full
+      h1 Home
 
-  a(href='/app/build/') Create new job
+      a(href='/app/build/') Create new job
 
-  h2 Recent Jobs
-  if jobs.length
-    each job in jobs
-      div
-        a(href='/app/build/#{job._id}')
-          h4=job.name
-        if job.description
-          p=job.description
-        else
-          p
-            i (no description)
-        p Last modified: #{new Date(job.updatedAt).toString()}
-        p Created by: 
-          a(href='/app/user/#{job.owner._id}') #{job.owner.name}
-  else
-    p No jobs.
+      h2 Recent Jobs
+      if jobs.length
+        each job in jobs
+          div
+            a(href='/app/build/#{job._id}')
+              h4=job.name
+            if job.description
+              p=job.description
+            else
+              p
+                i (no description)
+            p Last modified: #{new Date(job.updatedAt).toString()}
+            p Created by: 
+              a(href='/app/user/#{job.owner._id}') #{job.owner.name}
+      else
+        p No jobs.
 
-  h2 Recent Objects
-  if recent.length
-    each obj in recent
-      div
-        h4 #{obj.name} <small>#{obj.type}</small>
-        p from 
-          a(href='/app/build/#{obj.job._id}') #{obj.job.name}
-        if obj.description
-          p=obj.description
-        else
-          p
-            i (no description)
-  else
-    p Nothing recent.
+      h2 Recent Objects
+      if recent.length
+        each obj in recent
+          div
+            h4 #{obj.name} <small>#{obj.type}</small>
+            p from 
+              a(href='/app/build/#{obj.job._id}') #{obj.job.name}
+            if obj.description
+              p=obj.description
+            else
+              p
+                i (no description)
+      else
+        p Nothing recent.
 
-  h2 Users
-  if users.length
-    each user in users
-      h3 #{user.name} <small>#{user.username}</small>
-      a(href='/app/user/#{user.username}') User page
-  else
-    p No users.
+      h2 Users
+      if users.length
+        each user in users
+          h3 #{user.name} <small>#{user.username}</small>
+          a(href='/app/user/#{user.username}') User page
+      else
+        p No users.

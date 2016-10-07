@@ -1,0 +1,25 @@
+extends ../nav_workspace
+
+block navigation
+
+block workspace
+  .container
+    .full
+      h1 Edit Job
+      pre=doc
+
+      form(name='job', method='post', action='/api/jobs/#{job._id}')
+        input(type='hidden', name='_id', value=job._id)
+        label(for='job-name-input') Name
+        br
+        input#job-name-input(name='name', type='text', value=job.name)
+        br
+        label(for='job-shortname-input') Short name (used for url)
+        br
+        input#job-shortname-input(name='shortname', type='text', value=job.shortname)
+        br
+        label(for='job-description-textarea') Description
+        br
+        textarea#job-description-textarea(name='description')=job.description
+        br
+        button(type='submit') Submit

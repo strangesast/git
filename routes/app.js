@@ -56,6 +56,62 @@ router.use('/user', users); // offload login stuff
 
 router.use('/build', build); // offload build stuff
 
+router.get('/edit/:name/:id', function(req, res, next) {
+  if(!ObjectId.isValid(req.params.id)) next();
+  var Model = iface.nameToModel(req.params.name);
+  var stream = Model.findById(req.params.id).populate('job')
+
+  switch(Model.modelName) {
+    case 'Component':
+      stream = stream.populate('parts');
+      break;
+    case 'Phase':
+      strem = stream.populate('parent');
+  }
+  var partPromise = iface.sqlQuery('SELECT * FROM core_development.part_catalogs where purchaseable=1 && active=1 limit 100').then(function(arr) {
+    var obj = {};
+    var subobj;
+    for(var i=0; i < arr.length; i++) {
+      subobj = {};
+      for(var prop in arr[i]) {
+        subobj[prop] = arr[i][prop];
+      }
+      obj[subobj.version_id] = subobj;
+    }
+    return obj;
+  });
+
+  var requiredObjects = function(name, doc) {
+    var prom = Promise.resolve({});
+    switch(name) {
+      case 'Phase':
+        prom = Promise.all([
+          iface.Phase.find({job: doc.job})
+        ]).then(function(arr) {
+          return {
+            'phases': arr[0]
+          };
+        });
+      default:
+    }
+    return prom;
+  };
+
+  stream.then(function(doc) {
+    if(doc == null) return next({status: 404, error: new Error('not found')});
+
+    return Promise.all([partPromise, requiredObjects(Model.modelName, doc)]).then(function(all) {
+      var parts = all[0];
+      var objects = all[1];
+
+      res.render(path.join('pages/edit/', Model.modelName.toLowerCase()), {doc: doc, parts: parts, objects: objects});
+    });
+
+  }).catch(function(err) {
+    return next(err);
+  });
+});
+
 //router.get('/:pageName$', function(req, res, next) {
 //  if(VALID_PAGES.indexOf(req.params.pageName) === -1) return next();
 //  res.redirect(req.originalUrl + '/');

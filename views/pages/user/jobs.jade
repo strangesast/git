@@ -1,13 +1,15 @@
 extends ../full_workspace.jade
 
 block workspace
-  h1 Jobs owned by 
-    a(href='/app/user/#{user.username}') #{ user.name }
-  if jobs.length
-    each job in jobs
-      div
-        a(href="/app/build/#{user.username}/#{job.shortname.split(' ').join('_')}")
-          h3=job.name
-        p=job.description
-  else
-    p No jobs.
+  .container
+    .full
+      h1 Jobs owned by 
+        a(href='/app/user/#{user.username}') #{ user.name }
+      if jobs.length
+        each job in jobs
+          div
+            a(href="/app/build/#{user.username}/#{job.shortname.split(' ').join('_')}")
+              h3=job.name
+            p=job.description
+      else
+        p No jobs.

@@ -103,6 +103,7 @@ var recurse = function(data) {
         }
       }
     }
+
     return {tree: tree, included: included};
   }
 }
@@ -164,7 +165,19 @@ var iface = {
       if(job == null) throw new Error('job with that id ("'+jobid+'") does not exist');
 
       var q = {job: job._id};
-      return Promise.all([Phase, Building, Component].map((m)=>m.find(q))).then(function(arr) {
+      // check that root phase/building do exist
+      var rootPhaseDoc, rootBuildingDoc;
+      return Promise.all([(rootPhaseId != null ? Phase.findById(rootPhaseId) : Promise.resolve(null)).then(function(doc) {
+        if(doc == null && rootPhaseId != null) throw new Error('root phase with id "'+rootPhaseId+'" does not exist');
+        rootPhaseDoc = doc;
+      }),
+      (rootBuildingId != null ? Building.findById(rootBuildingId) : Promise.resolve(null)).then(function(doc) {
+        if(doc == null && rootBuildingId != null) throw new Error('root building with id "'+rootBuildingId+'" does not exist');
+        rootBuildingDoc = doc;
+      })]).then(function() {
+        return Promise.all([Phase, Building, Component].map((m)=>m.find(q)));
+
+      }).then(function(arr) {
         return recurse(arr)(
           rootPhaseId, // root phase (filter, default null)
           rootBuildingId, // root building (filter, default null)
@@ -175,6 +188,10 @@ var iface = {
           options.phaseDescendants == null ? false : !!options.phaseDescendants,
           options.buildingDescendants == null ? false : !!options.buildingDescendants
         );
+      }).then(function(both) {
+        both.included.phases[rootPhaseId] = rootPhaseDoc;
+        both.included.buildings[rootBuildingId] = rootBuildingDoc;
+        return both;
       });
     });
   },

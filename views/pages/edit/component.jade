@@ -1,0 +1,48 @@
+extends ../nav_workspace
+
+block navigation
+
+block workspace
+  .container
+    .full
+      h1 Edit Component
+      form
+        label Name
+        input(value=doc.name, type='text')
+
+      h3 Parts
+      table
+        tr
+          th Core Part
+          th Name
+          th Description
+          th Qty
+          th Price
+
+        if doc.parts.length
+          each part in doc.parts
+            tr
+              td=((part.part in parts) ? parts[part.part].description : part.part)
+              td=part.name
+              td=part.description
+              td=part.qty
+              td=part.price
+        else
+          tr
+            td No parts
+
+      form(action='/api/components/#{doc._id}/parts', method='post')
+        h3 Add Part
+        label Part List
+          input(name='part', list='part-catalog-list')
+        button(type='submit') Submit
+
+      datalist#part-catalog-list
+        -for(var part in parts)
+          option(value=part)=parts[part].description
+
+
+
+
+
+      pre=doc
