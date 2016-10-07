@@ -194,6 +194,9 @@ var iface = {
           resolve(rows);
         });
       });
+    }).catch(function(err) {
+      console.log(err);
+      return [];
     });
   }
 };

@@ -54,10 +54,14 @@ var connection = mysql.createConnection({
   database: 'core_development'
 });
 
-connection.connect(function(err) {
-  if(err) throw err;
-  console.log('Connected to mysql db');
-});
+try {
+  connection.connect(function(err) {
+    if(err) throw err;
+    console.log('Connected to mysql db');
+  });
+} catch (e) {
+  console.log(e);
+}
 
 var props = ['version_id', 'number', 'description', 'summary', 'type', 'price', 'list_price'];
 
@@ -119,36 +123,46 @@ router.route('/:name/:id?')
   var id = req.params.id;
   var body = req.body;
   var Model = req.Model;
-  if('owner' in Model.schema.paths) { // temporary
-    body.owner = req.user ? req.user._id : '57f3df8841f7dc76f4a2af4b';
-  }
-  if(id != null || ('_id' in body)) { // temporary
-    body['_id'] = id;
-    return Model.findByIdAndUpdate(body['_id'], {'$set': body}).then(function(result) {
-      if(req.get('Content-Type') === 'application/x-www-form-urlencoded') { // temporary
-        if(Model.modelName == 'Job') {
-          return res.redirect(path.join('/app/build/', id));
-        }
-      }
-      res.json(result);
+  var prom = Promise.resolve();
+  // temporary
+  if(('owner' in Model.schema.paths) && body.owner == null && req.user != null) {
+    body.owner = req.user._id;
+
+  } else if(('owner' in Model.schema.paths) && body.owner == null) { // temporary
+    prom = iface.Account.findOne({}).limit(1).then(function(doc) {
+      if(doc == null) throw new Error('need at least one user to fake this');
+      body.owner = doc._id;
     });
   }
-  var model = new Model(body);
-  model.save().then(function(doc) {
-    if(req.get('Content-Type') === 'application/x-www-form-urlencoded') { // temporary
-      return res.redirect('/app/build/');
+  prom.then(function() {
+    if(id != null || ('_id' in body)) { // temporary
+      body['_id'] = id;
+      return Model.findByIdAndUpdate(body['_id'], {'$set': body}).then(function(result) {
+        if(req.get('Content-Type') === 'application/x-www-form-urlencoded') { // temporary
+          if(Model.modelName == 'Job') {
+            return res.redirect(path.join('/app/build/', id));
+          }
+        }
+        res.json(result);
+      });
     }
-    return res.json(doc);
+    var model = new Model(body);
+    return model.save().then(function(doc) {
+      if(req.get('Content-Type') === 'application/x-www-form-urlencoded') { // temporary
+        return res.redirect('/app/build/');
+      }
+      return res.json(doc);
 
-  }).catch(function(err) {
-    switch (err.name) {
-      case 'ValidationError':
-      default:
-        if(err.errors) 
-        var message = err.message;
-        if(err.errors) message += ' (' + Object.keys(err.errors).map((n)=>err.errors[n].message).join(', ') + ')';
-        return next({status: 400, message: message, error: err});
-    }
+    }).catch(function(err) {
+      switch (err.name) {
+        case 'ValidationError':
+        default:
+          if(err.errors) 
+          var message = err.message;
+          if(err.errors) message += ' (' + Object.keys(err.errors).map((n)=>err.errors[n].message).join(', ') + ')';
+          return next({status: 400, message: message, error: err});
+      }
+    });
   });
 })
 .put(function(req, res, next) {
