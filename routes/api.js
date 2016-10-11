@@ -103,6 +103,14 @@ router.get('/', function(req, res, next) {
   });
 });
 
+router.get('/jobs/recent', function(req, res, next) {
+  iface.Job.find({}).sort({updatedAt: -1}).limit(10).then(function(docs) {
+    res.json(docs);
+  }).catch(function(err) {
+    next(err);
+  });
+});
+
 router.route('/:name/:id?')
 .all(function(req, res, next) {
   var name = req.params.name;
@@ -146,7 +154,10 @@ router.route('/:name/:id?')
       body['_id'] = id;
       return Model.findByIdAndUpdate(body['_id'], {'$set': body}).then(function(result) {
         if(req.get('Content-Type') === 'application/x-www-form-urlencoded') { // temporary
-          if(Model.modelName == 'Job') {
+          var ref = req.header('Referrer');
+          if(ref) {
+            return res.redirect(ref);
+          } else if(Model.modelName == 'Job') {
             return res.redirect(path.join('/app/build/', id));
           }
         }
@@ -156,6 +167,11 @@ router.route('/:name/:id?')
     var model = new Model(body);
     return model.save().then(function(doc) {
       if(req.get('Content-Type') === 'application/x-www-form-urlencoded') { // temporary
+        var ref = req.header('Referrer');
+        if(ref) {
+          return res.redirect(ref);
+        }
+
         return res.redirect('/app/build/');
       }
       return res.json(doc);
@@ -213,6 +229,11 @@ router.post('/components/:id/parts', function(req, res, next) {
     return partref.save().then(function(doc) {
       return Component.findByIdAndUpdate(component._id, {$push: {'parts': doc._id}}).then(function(result) {
         if(req.get('Content-Type') === 'application/x-www-form-urlencoded') { // temporary
+          var ref = req.header('Referrer');
+          if(ref) {
+            return res.redirect(ref);
+          }
+
           return res.redirect(path.join('/app/build/', String(component.job), '#' + component._id + '-parts'));
         }
         res.json(result);
@@ -278,6 +299,11 @@ router.route('/:name1/:id1/:name2')
   var model = new Model(body);
   model.save().then(function(doc) {
     if(req.get('Content-Type') === 'application/x-www-form-urlencoded') { // temporary
+      var ref = req.header('Referrer');
+      if(ref) {
+        return res.redirect(ref);
+      }
+
       return res.redirect(path.join('/app/build/', String(par._id), '#' + model._id));
     }
     res.json(doc);

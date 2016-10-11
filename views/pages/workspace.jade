@@ -12,16 +12,19 @@ block content
         .dropdown.bottom
           a.icon(href='/app/user')
             span.fa.fa-user.fa-lg
-            span.user-title User
+            if user
+              span.user-title=user.username
+            else
+              span.user-title User
           .dropdown-body
-            a(href='#')
-              span Option 1
-            a(href='#')
-              span Option 2
-            a(href='#')
-              span Option 3
-            a(href='#')
-              span Option 4
+            if user
+              a(href='/app/user/')
+                span Your jobs
+              a(href='/app/user/logout')
+                span Log out
+            else
+              a(href='/app/user/login')
+                span Log in
 
     block body
 

@@ -37,25 +37,113 @@ block navigation
           span Filters
         .dropdown-body
           a(href='#')
-            span Option 1
+            span Descendants
           a(href='#')
-            span Option 2
-          a(href='#')
-            span Option 3
-          a(href='#')
-            span Option 4
+            span Empty Folders
 
 block workspace
   .container
     .search-box
       each result in queryResult
         .search-result
-          .id #{result.version_id}
           .description #{result.description}
-          .price List Price: #{result.list_price}
-          .price NYS Price: #{result.nysprice}
-      .search-result Four
-      .search-result Five
+          //.price List Price: #{result.list_price}
+          //.price NYS Price: #{result.nysprice}
+          form(name='add-component', method='post', action='/api/jobs/#{job._id}/components')
+            input(type='hidden', name='part', value=result.version_id)
+            label Name
+            input(type='text', name='name', value=result.description)
+            br
+            label Phase
+            select(name='phase', type='text')
+              each phase in phases
+                option(value=phase._id)=phase.name
+            br
+            label Building
+            select(name='building', type='text')
+              each building in buildings
+                option(value=building._id)=building.name
+            br
+            button(type='submit') Add
+
+      if options.phaseEnabled == null || options.phaseEnabled
+        .search-result
+          h3 New Phase
+          form(name='new-phase', method='post', action='/api/jobs/#{job._id}/phases')
+            label(for='new-phase-name-input') Name
+            br
+            input#new-phase-name-input(name='name', type='text')
+            br
+            label(for='new-phase-parent-input') Parent
+            br
+            select#new-phase-parent-input(name='parent', type='text')
+              option(value='') null
+              each phase in phases
+                option(value=phase._id)=phase.name
+            br
+            label(for='new-phase-description-textarea') Description
+            br
+            textarea(name='description')
+            br
+            button(type='submit') Submit
+
+      if options.buildingEnabled == null || options.buildingEnabled
+        .search-result
+          h3 New Building
+          form(name='new-building', method='post', action='/api/jobs/#{job._id}/buildings')
+            label(for='new-building-name-input') Name
+            br
+            input#new-building-name-input(name='name', type='text')
+            br
+            label(for='new-building-parent-input') Parent
+            br
+            select#new-building-parent-input(name='parent', type='text')
+              option(value='') null
+              each building in buildings
+                option(value=building._id)=building.name
+            br
+            label(for='new-building-description-textarea') Description
+            br
+            textarea(name='description')
+            br
+            button(type='submit') Submit
+
+      if options.componentEnabled == null || options.componentEnabled
+        .search-result
+          h3 New Component
+          form(name='new-component', method='post', action='/api/jobs/#{job._id}/components')
+            label(for='new-component-name-input') Name
+            br
+            input#new-component-name-input(name='name', type='text')
+            br
+            label(for='new-component-phase-input') Phase
+            br
+            select#new-component-phase-input(name='phase', type='text')
+              option(value='') null
+              each phase in phases
+                option(value=phase._id)=phase.name
+            br
+            label(for='new-component-building-input') Building
+            br
+            select#new-component-building-input(name='building', type='text')
+              option(value='') null
+              each building in buildings
+                option(value=building._id)=building.name
+            br
+
+            label(for='new-component-parent-input') Parent
+            br
+            select#new-component-parent-input(name='parent', type='text')
+              option(value='') null
+              each component in components
+                option(value=component._id)=component.name
+            br
+            label(for='new-component-description-textarea') Description
+            br
+            textarea(name='description')
+            br
+            button(type='submit') Submit
+
 
     .tree
       .tree-filters
@@ -77,18 +165,19 @@ block workspace
       if tree.length
         each branch in tree
           - var obj = included[branch['type'] + 's'][branch['_id']]
+          - var qstring = ['phase', 'building'].filter((t)=>t!=branch.type).map((a)=>'root' + a[0].toUpperCase() + a.slice(1)).map((el)=>options[el] != null ? el + '=' + options[el] : '').filter((el)=>el!='');
           div.tree-element(level=branch.level)
             span.icon.fa(class=(branch.type == 'phase' ? 'fa-bookmark-o' : branch.type == 'building' ? 'fa-building-o' : 'fa-cubes'))
             a(href="/app/edit/#{branch.type + 's'}/#{obj._id}").hoverstyle
               span.name=obj.name
             if branch.type !== 'component'
-              a(href='?root#{branch.type[0].toUpperCase()+branch.type.slice(1)}=#{obj._id}').nostyle
+              a(href='?' + qstring.concat('root'+branch.type[0].toUpperCase()+branch.type.slice(1)+'='+obj._id).join('&')).nostyle
                 span.fa.fa-angle-right.fa-lg
-            span.spacer
-            span.id=obj._id
-            span #{branch.level} #{branch.type} #{obj.name}
+            span.description=obj.description
             if branch.type == 'component'
-              span  (#{included[branch['type'] + 's'][branch['_id']].parts.length} Parts)
+              span.partcnt  (#{included[branch['type'] + 's'][branch['_id']].parts.length} Parts)
+
+            span.spacer
 
             span.icon.fa.fa-angle-right
               

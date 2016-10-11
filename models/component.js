@@ -2,6 +2,7 @@ var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 var Mixed = Schema.Types.Mixed;
 var ObjectId = Schema.Types.ObjectId;
+var PartRef = require('./partref');
 
 var schema = new Schema({
   name: {
@@ -36,6 +37,13 @@ schema.pre('validate', function(next) {
   if(!this['parent']) this['parent'] = null; // post likes empty string
 
   next();
+});
+
+schema.virtual('part').set(function(part) {
+  var model = new PartRef({part: part});
+  model.save();
+  this.parts.push(model._id);
+  console.log(this);
 });
 
 module.exports = Component = mongoose.model('Component', schema);
