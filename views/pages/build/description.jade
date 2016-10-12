@@ -1,0 +1,18 @@
+.container#description
+  .picture
+  .information
+    h1=job.name
+    p id: #{job._id}
+    p description: #{job.description ? job.description : '(no description)'}
+    p owner: #{job.owner.name} 
+      a(href='/app/user/#{job.owner.username}') (#{job.owner.username})
+
+  template
+    .container#description
+      .picture
+      .information
+        h1 { job:name }
+        p id: { job:_id }
+        p description: { job:description }
+        p owner: #{job.owner.name} 
+          a(href='/app/user/#{job.owner.username}') (#{job.owner.username})

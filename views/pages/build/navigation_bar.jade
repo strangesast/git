@@ -1,0 +1,62 @@
+.container#navigation-bar
+  - var classes = ['fa-bookmark-o', 'fa-building-o', 'fa-cubes']
+  - var kinds = ['phase', 'building', 'component']
+  - var uppercase = (str) => str[0].toUpperCase() + str.slice(1)
+  .search
+    form(action='', method='get')
+      input(type='text', name='query', placeholder='search', value=options.query)
+  .controls
+    .left
+      - var cnt = kinds.map((k)=>options[k + 'Enabled']).filter((k)=>k==null||k).length;
+      - console.log(cnt)
+      each kind, i in kinds
+        - var other = kinds.filter((k)=>k!=kind)
+        - var enabled = options[kind + 'Enabled']
+        - var qstr = other.map((k)=>options[k+'Enabled']!=null && !options[k+'Enabled'] ? k+'Enabled=0' : '').concat(enabled == null || !!enabled ? kind + 'Enabled=0' : '', options.query ? 'query=' + options.query : '', options.rootPhase ? 'rootPhase=' + options.rootPhase : '', options.rootBuilding ? 'rootBuilding=' + options.rootBuilding : '').filter((e)=>e!='').join('&')
+        - var c = classes[i]
+        // if last active, disable de-activation
+        a.icon(href=(enabled == null || enabled) && cnt == 1 ? false : '?' + qstr, class=enabled==null||enabled?'active':'')
+          span(class=c).fa.fa-lg
+          span=uppercase(kind)
+  
+    .right
+      .dropdown
+        a.icon(href='#')
+          span.fa.fa-filter.fa-lg
+          span Filters
+        .dropdown-body
+          a(href='#')
+            span Phase Descendants
+          a(href='#')
+            span Building Descendants
+          a(href='#')
+            span Empty Folders
+
+  // tree model view
+  template
+    .container#navigation-bar
+      .search
+        input(type='text', name='query', placeholder='search', rv-value='search:query')
+      .controls
+        .left
+          each kind, i in kinds
+            - var _class = classes[i];
+            input.toggle(name='kind-enabled', id='#{kind}-enabled', type='checkbox', rv-checked='tree:#{kind}Enabled')
+            label.icon.link(for='#{kind}-enabled', title='toggle #{kind} visibility in tree')
+              span(class=_class).fa.fa-lg
+              span=uppercase(kind)
+        .right
+          .dropdown
+            .icon(href='#')
+              span.fa.fa-filter.fa-lg
+              span Filters
+            .dropdown-body
+              input(id='phase-descendants-enabled', type='checkbox', rv-checked='tree:phaseDescendants').toggle
+              label(for='phase-descendants-enabled').icon.link
+                span Phase Descendants
+              input(id='building-descendants-enabled', type='checkbox', rv-checked='tree:buildingDescendants').toggle
+              label(for='building-descendants-enabled').icon.link
+                span Building Descendants
+              input(id='empty-folders-enabled', type='checkbox', rv-checked='tree:emptyFolders').toggle
+              label(for='empty-folders-enabled').icon.link
+                span Empty Folders

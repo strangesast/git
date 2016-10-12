@@ -1,48 +1,13 @@
 extends ../nav_workspace
 
 block top
-  .container
-    .picture
-    .information
-      h1=job.name
-      p id: #{job._id}
-      p description: #{job.description ? job.description : '(no description)'}
-      p owner: #{job.owner.name} 
-        a(href='/app/user/#{job.owner.username}') (#{job.owner.username})
+  include description
 
 block navigation
-  .search
-    form(action='', method='get')
-      input(type='text', name='query', placeholder='search', value=options.query)
-  .controls
-    .left
-      - var classes = ['fa-bookmark-o', 'fa-building-o', 'fa-cubes']
-      - var kinds = ['phase', 'building', 'component']
-      - var cnt = kinds.map((k)=>options[k + 'Enabled']).filter((k)=>k==null||k).length;
-      - console.log(cnt)
-      each kind, i in kinds
-        - var other = kinds.filter((k)=>k!=kind)
-        - var enabled = options[kind + 'Enabled']
-        - var qstr = other.map((k)=>options[k+'Enabled']!=null && !options[k+'Enabled'] ? k+'Enabled=0' : '').concat(enabled == null || !!enabled ? kind + 'Enabled=0' : '', options.query ? 'query=' + options.query : '', options.rootPhase ? 'rootPhase=' + options.rootPhase : '', options.rootBuilding ? 'rootBuilding=' + options.rootBuilding : '').filter((e)=>e!='').join('&')
-        - var c = classes[i]
-        // if last active, disable de-activation
-        a.icon(href=(enabled == null || enabled) && cnt == 1 ? false : '?' + qstr, class=enabled==null||enabled?'active':'')
-          span(class=c).fa.fa-lg
-          span=kind[0].toUpperCase()+kind.slice(1)
-
-    .right
-      .dropdown
-        a.icon(href='#')
-          span.fa.fa-filter.fa-lg
-          span Filters
-        .dropdown-body
-          a(href='#')
-            span Descendants
-          a(href='#')
-            span Empty Folders
+  include navigation_bar
 
 block workspace
-  .container
+  .container#workspace
     .search-box
       each result in queryResult
         .search-result
@@ -145,7 +110,7 @@ block workspace
             button(type='submit') Submit
 
 
-    .tree
+    .tree#tree
       .tree-filters
         if options.rootBuilding != null
           div
@@ -184,180 +149,38 @@ block workspace
       else
         p Tree empty.
 
-div
-  h1 Components
-  h2 Phases
-  if phases.length
-    each phase in phases
-      div(id=phase._id)
-        h3 #{phase.name}
-        small #{phase._id}
-        p Parent: #{phase.parent ? phase.parent.name : 'null'}
-        span Description:
-        if phase.description
-          p=phase.description
-        else
-          p
-            i (no description)
-  else
-    p No phases
+      template
+        .tree#tree
+          .tree-filters
+            div(rv-if='model:rootPhase')
+              span.fa.fa-close.fa-lg.remove
+              span Phases
+              span.fa.fa-angle-right.fa-lg
+              span { model:rootPhase }
+            div(rv-if='model:rootBuilding')
+              span.fa.fa-close.fa-lg.remove
+              span Buildings
+              span.fa.fa-angle-right.fa-lg
+              span { model:rootBuilding }
+          .tree-element(rv-each-branch='model.tree')
+            span.icon.fa(class='branch.type | icon_class')
+            a(fa-href='branch._id') { branch._id }
+            span.spacer
+            span.icon.fa.fa-angle-right
+           
 
-  if user && user._id.equals(job.owner)
-    form(name='new-phase', method='post', action='/api/jobs/#{job._id}/phases')
-      label(for='new-phase-name-input') Name
-      br
-      input#new-phase-name-input(name='name', type='text')
-      br
-      label(for='new-phase-parent-input') Parent
-      br
-      select#new-phase-parent-input(name='parent', type='text')
-        option(value='') null
-        each phase in phases
-          option(value=phase._id)=phase.name
-      br
-      label(for='new-phase-description-textarea') Description
-      br
-      textarea(name='description')
-      br
-      button(type='submit') Submit
+block template
 
-div
-  h2 Buildings
-  if buildings.length
-    each building in buildings
-      div(id=building._id)
-        h3 #{building.name}
-        small #{building._id}
-        p Parent: #{building.parent ? building.parent.name : 'null'}
-        span Description:
-        if building.description
-          p=building.description
-        else
-          p
-            i (no description)
-  else
-    p No buildings
+block scripts
+  script(src='/components/backbone/backbone-min.js')
+  - var newline_escape = (str) => str.replace(/\\r\\n/g, '\\\r\\\n').replace(/\\r/g, "\\r").replace(/\\t/g, "\\t").replace(/\\b/g, "\\b").replace(/\\f/g, "\\f");
+  };
+  - console.log(newline_escape(JSON.stringify(job)))
+  script.
+    var PREFETCH = {};
+    PREFETCH.job = JSON.parse('!{newline_escape(JSON.stringify(job))}');
+    PREFETCH.phases = JSON.parse('!{newline_escape(JSON.stringify(phases))}');
+    PREFETCH.buildings = JSON.parse('!{newline_escape(JSON.stringify(buildings))}');
+    PREFETCH.components = JSON.parse('!{newline_escape(JSON.stringify(components))}');
 
-  if user && user._id.equals(job.owner)
-    form(name='new-building', method='post', action='/api/jobs/#{job._id}/buildings')
-      label(for='new-building-name-input') Name
-      br
-      input#new-building-name-input(name='name', type='text')
-      br
-      label(for='new-building-parent-input') Parent
-      br
-      select#new-building-parent-input(name='parent', type='text')
-        option(value='') null
-        each building in buildings
-          option(value=building._id)=building.name
-      br
-      label(for='new-building-description-textarea') Description
-      br
-      textarea(name='description')
-      br
-      button(type='submit') Submit
-
-
-div
-  h2 Components
-  if components.length
-    each component in components
-      div(id=component._id)
-        h3 #{component.name} 
-        small #{component._id}
-        p Parent: #{component.parent ? component.parent.name : 'null'}
-        p Phase: #{component.phase ? component.phase.name : 'null'}
-        p Building: #{component.building ? component.building.name : 'null'}
-
-        span Description:
-        if component.description
-          p=component.description
-        else
-          p
-            i (no description)
-        p Parts
-        table(id='#{component._id}-parts')
-          tr
-            th Core Part
-            th Name
-            th Description
-            th Qty
-            th Price
-
-          if component.parts.length
-            each part in component.parts
-              tr
-                td=((part.part in parts) ? parts[part.part].description : part.part)
-                td=part.name
-                td=part.description
-                td=part.qty
-                td=part.price
-          else
-            tr
-              td No parts
-
-        if user && user._id.equals(job.owner)
-          p Add part
-          form(action='/api/components/#{component._id}/parts', method='post')
-            label Part List
-              input(name='part', list='part-catalog-list')
-            button(type='submit') Submit
-
-  else
-    p No Components
-
-  datalist#part-catalog-list
-    -for(var part in parts)
-      option(value=part)=parts[part].description
-
-  if user && user._id.equals(job.owner)
-    form(name='new-component', method='post', action='/api/jobs/#{job._id}/components')
-      label(for='new-component-name-input') Name
-      br
-      input#new-component-name-input(name='name', type='text')
-      br
-      label(for='new-component-phase-input') Phase
-      br
-      select#new-component-phase-input(name='phase', type='text')
-        option(value='') null
-        each phase in phases
-          option(value=phase._id)=phase.name
-      br
-      label(for='new-component-building-input') Building
-      br
-      select#new-component-building-input(name='building', type='text')
-        option(value='') null
-        each building in buildings
-          option(value=building._id)=building.name
-      br
-
-      label(for='new-component-parent-input') Parent
-      br
-      select#new-component-parent-input(name='parent', type='text')
-        option(value='') null
-        each component in components
-          option(value=component._id)=component.name
-      br
-      label(for='new-component-description-textarea') Description
-      br
-      textarea(name='description')
-      br
-      button(type='submit') Submit
-
-if user && user._id.equals(job.owner)
-  form(name='job', method='post', action='/api/jobs/#{job._id}')
-    input(type='hidden', name='_id', value=job._id)
-    label(for='job-name-input') Name
-    br
-    input#job-name-input(name='name', type='text', value=job.name)
-    br
-    label(for='job-shortname-input') Short name (used for url)
-    br
-    input#job-shortname-input(name='shortname', type='text', value=job.shortname)
-    br
-    label(for='job-description-textarea') Description
-    br
-    textarea#job-description-textarea(name='description')=job.description
-    br
-    button(type='submit') Submit
-
+  script(src='/javascripts/build.js')

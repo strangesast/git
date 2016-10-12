@@ -91,6 +91,7 @@ router.get('/:username/:shortname', function(req, res, next) {
 
       return Promise.all([allPromise, treePromise, partPromise, queryPromise]).then(function(all) {
         var data = all[0];
+        console.log(JSON.stringify(job));
         data.job = job;
         data.tree = all[1].tree;
         data.included = all[1].included;

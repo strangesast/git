@@ -24,7 +24,7 @@ body {
   flex-grow: 1;
 }
 
-a.icon {
+.icon, a.icon {
   color: inherit;
   text-decoration: none;
   span {
@@ -32,6 +32,33 @@ a.icon {
     &:not(:first-child) {
       padding-left: 0;
     }
+  }
+
+  background: white;
+}
+
+.icon.link:hover {
+  cursor: pointer;
+}
+
+// used elsewhere
+.active {
+  filter: invert(100%);
+}
+.hoverlight {
+  &:hover {
+    background: lightgrey;
+  }
+}
+
+input.toggle[type='checkbox'], input.toggle[type='radio'] {
+  display: none;
+  &:checked + label {
+  .active;
+  }
+  & + label {
+    user-select: none;
+    -webkit-user-select: none;
   }
 }
 
@@ -71,10 +98,7 @@ span.icon {
         padding: 8px;
         line-height: @navigation-height;
       }
-      &:hover {
-        background: lightgrey;
-      }
-
+      .hoverlight;
     }
 
   }
@@ -149,7 +173,8 @@ span.icon {
       .left, .right {
         height: 100%;
         white-space: nowrap;
-        & > * {
+        & > label, & > a {
+          .hoverlight;
           display: inline-block;
           padding: 0 6px;
           background: white;
@@ -174,7 +199,7 @@ span.icon {
       }
 
       a.active {
-        filter: invert(100%);
+        .active;
       }
 
     }

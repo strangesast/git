@@ -42,6 +42,17 @@ rivets.formatters['='] = {
   }
 }
 
+rivets.formatters['icon_class'] = {
+  read: function(value, arg) {
+    console.log(value);
+    return value;
+  },
+  publish: function(value, arg) {
+    console.log(value, arg);
+    return arg;
+  }
+}
+
 rivets.formatters['notnull'] = function(value, arg) {
   return value != null;
 };

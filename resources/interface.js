@@ -9,104 +9,7 @@ var Building = require('../models/building');
 var Component = require('../models/component');
 var PartRef = require('../models/partref');
 
-var bool = function(element, values) {
-  if(Array.isArray(values)) return element instanceof ObjectId ? values.some((v)=>element.equals(v)) : values.some((v)=>v==element);
-  return element instanceof ObjectId ? element.equals(values) : element == values;
-}
-
-var getDescendants = function(arr) {
-  return function func(ob) {
-    children = arr.filter(function(el) {
-      return el['parent'] instanceof ObjectId ? el['parent'].equals(ob['_id']) : el['parent'] == ob['_id'];
-    });
-    morechildren = children.map(func);
-    if(morechildren.length) morechildren = morechildren.reduce((a, b)=>a.concat(b));
-    return [ob].concat(children, morechildren);
-  };
-}
-
-var recurse = function(data) {
-  
-  var getPhaseDescendants = getDescendants(data[0]);
-  var getBuildingDescendants = getDescendants(data[1]);
-  
-  var components = data[2];
-
-  return function func(currentRootPhase, currentRootBuilding, level, phaseEnabled, buildingEnabled, componentEnabled, phaseDescendants, buildingDescendants) {
-    var included = {phases: {}, buildings: {}, components: {}};
-    var tree = [];
-
-    if(!phaseEnabled) phaseDescendants = true;
-    if(!buildingEnabled) buildingDescendants = true;
-    // doesn't make sense when type is enabled
-    //phaseDescendants = !phaseEnabled && phaseDescendants;
-    //buildingDescendants = !buildingEnabled && buildingDescendants;
-
-    if(phaseEnabled) {
-      var phases = data[0].filter(function(p) {
-        return bool(p.parent, currentRootPhase);
-      });
-    }
-    if(buildingEnabled) {
-      var buildings = data[1].filter(function(b) {
-        return bool(b.parent, currentRootBuilding);
-      });
-    }
-
-
-    var phase, building, component;
-    if(phaseEnabled) {
-      for(var i=0; phase=phases[i], i < phases.length; i++) {
-        tree.push({type: 'phase', _id: phase._id, level: level});
-        if(!(phase._id in included.phases)) included.phases[phase._id] = phase;
-
-        let both = func(phase._id, currentRootBuilding, level+1, phaseEnabled, buildingEnabled, componentEnabled, phaseDescendants, buildingDescendants);
-        ['phases', 'buildings', 'components'].forEach(function(type) {
-          for(var prop in both.included[type]) {
-            included[type][prop] = both.included[type][prop];
-          }
-        });
-        both.tree.forEach(function(child) {
-          tree.push(child);
-        });
-      }
-    }
-    if (buildingEnabled) {
-      phase = {'_id':currentRootPhase};
-      for(var j=0; building=buildings[j], j < buildings.length; j++) {
-        tree.push({type: 'building', _id: building._id, level: level});
-        if(!(building._id in included.buildings)) included.buildings[building._id] = building;
-
-        let both = func(currentRootPhase, building._id, level+1, false, buildingEnabled, componentEnabled, phaseDescendants, buildingDescendants);
-        ['phases', 'buildings', 'components'].forEach(function(type) {
-          for(var prop in both.included[type]) {
-            included[type][prop] = both.included[type][prop];
-          }
-        });
-        both.tree.forEach(function(child) {
-          tree.push(child);
-        });
-      }
-    }
-    if (componentEnabled) {
-      phase = {'_id':currentRootPhase};
-      building = {'_id':currentRootBuilding};
-      var pdescendants;
-      var bdescendants;
-      if(phaseDescendants) pdescendants = getPhaseDescendants(phase).map((el)=>el._id);
-      if(buildingDescendants) bdescendants = getBuildingDescendants(building).map((el)=>el._id);
-
-      for(var k=0; component=components[k], k < components.length; k++) {
-        if(bool(component.phase, pdescendants || phase._id) && bool(component.building, bdescendants || building._id)) {
-          tree.push({type: 'component', _id: component._id, level: level});
-          if(!(component._id in included.components)) included.components[component._id] = component;
-        }
-      }
-    }
-
-    return {tree: tree, included: included};
-  }
-}
+var common = require('./common')
 
 var iface = {
   nameToModel: function(name) {
@@ -157,42 +60,53 @@ var iface = {
       return obj;
     });
   },
+  verify: function(Model, id) {
+    // if null, return null.  throw error if id invalid / doesn't exist
+    if(id==null) return Promise.resolve(id);
+    if(Model==null) return new Error('model required');
+    if(!ObjectId.isValid(id)) return Promise.reject(new Error('invalid id format'));
+    return Model.findById(id);
+  },
+  tin: function(ob) {
+    // true if null
+    return ob == null ? true : !!ob;
+  },
   buildTree: function(jobid, rootPhaseId, rootBuildingId, options) {
     rootPhaseId = rootPhaseId || null;
     rootBuildingId = rootBuildingId || null;
     options = options || {};
+    var rootPhaseDoc, rootBuildingDoc, q;
     return Job.findById(jobid).then(function(job) {
       if(job == null) throw new Error('job with that id ("'+jobid+'") does not exist');
+      q = {job: job._id};
 
-      var q = {job: job._id};
-      // check that root phase/building do exist
-      var rootPhaseDoc, rootBuildingDoc;
-      return Promise.all([(rootPhaseId != null ? Phase.findById(rootPhaseId) : Promise.resolve(null)).then(function(doc) {
-        if(doc == null && rootPhaseId != null) throw new Error('root phase with id "'+rootPhaseId+'" does not exist');
-        rootPhaseDoc = doc;
-      }),
-      (rootBuildingId != null ? Building.findById(rootBuildingId) : Promise.resolve(null)).then(function(doc) {
-        if(doc == null && rootBuildingId != null) throw new Error('root building with id "'+rootBuildingId+'" does not exist');
-        rootBuildingDoc = doc;
-      })]).then(function() {
+      // check that root phase/building do exist (or are null)
+      // check that rootPhases specified are null or valid
+      return Promise.all([
+        iface.verify(Phase, rootPhaseId).then((doc) => rootPhaseDoc = doc),
+        iface.verify(Building, rootBuildingId).then((doc) => rootBuildingDoc = doc)
+      ]);
+    }).then(function() {
+        // get phases etc belonging to job
         return Promise.all([Phase, Building, Component].map((m)=>m.find(q)));
 
-      }).then(function(arr) {
-        return recurse(arr)(
-          rootPhaseId, // root phase (filter, default null)
-          rootBuildingId, // root building (filter, default null)
-          0, // starting level
-          options.phaseEnabled == null ? true : !!options.phaseEnabled,
-          options.buildingEnabled == null ? true : !!options.buildingEnabled,
-          options.componentEnabled == null ? true : !!options.componentEnabled,
-          options.phaseDescendants == null ? false : !!options.phaseDescendants,
-          options.buildingDescendants == null ? false : !!options.buildingDescendants
-        );
-      }).then(function(both) {
-        both.included.phases[rootPhaseId] = rootPhaseDoc;
-        both.included.buildings[rootBuildingId] = rootBuildingDoc;
-        return both;
-      });
+    }).then(common.assembleTree).then(function(func) {
+      // currentRootPhase, currentRootBuilding, level, phaseEnabled, buildingEnabled, componentEnabled, phaseDescendants, buildingDescendants
+      return func(
+        rootPhaseId, // root phase (filter, default null)
+        rootBuildingId, // root building (filter, default null)
+        0, // starting level
+        iface.tin(options.phaseEnabled),
+        iface.tin(options.buildingEnabled),
+        iface.tin(options.componentEnabled),
+        iface.tin(options.phaseDescendants),
+        iface.tin(options.buildingDescendants),
+        iface.tin(options.emptyFolders)
+      );
+    }).then(function(both) {
+      both.included.phases[rootPhaseId] = rootPhaseDoc;
+      both.included.buildings[rootBuildingId] = rootBuildingDoc;
+      return both;
     });
   },
   sqlQuery: function(query, arr) {
