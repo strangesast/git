@@ -41,6 +41,14 @@ rivets.formatters['='] = {
     return arg;
   }
 }
+rivets.formatters['!='] = {
+  read: function(value, arg) {
+    return value != arg;
+  },
+  publish: function(value, arg) {
+    return arg;
+  }
+}
 
 rivets.formatters['icon_class'] = {
   read: function(value) {

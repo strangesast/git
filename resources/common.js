@@ -69,7 +69,7 @@ var common = (function() {
           }
         }
         //                     otherwise building is repeated after phase on first level
-        if (buildingEnabled && (level != 0 || !phaseEnabled)) {
+        if (buildingEnabled && (currentRootPhase != null || level != 0 || !phaseEnabled)) {
           phase = {'_id':currentRootPhase};
           for(var j=0; building=buildings[j], j < buildings.length; j++) {
             tree.push({type: 'building', _id: building._id, level: level});
@@ -95,7 +95,7 @@ var common = (function() {
             }
           }
         }
-        if(!emptyFolders) { // hide empty folders
+        if((componentEnabled == null || componentEnabled) && !emptyFolders) { // hide empty folders, but only when component enabled
           var typeArr = tree.map((el)=>el.type);
           var i=0;
 

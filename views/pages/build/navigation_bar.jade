@@ -41,7 +41,7 @@
         .left
           each kind, i in kinds
             - var _class = classes[i];
-            input.toggle(name='kind-enabled', id='#{kind}-enabled', type='checkbox', rv-checked='tree:#{kind}Enabled')
+            input.toggle.type(name='kind-enabled', id='#{kind}-enabled', type='checkbox', rv-checked='tree:#{kind}Enabled')
             label.icon.link(for='#{kind}-enabled', title='toggle #{kind} visibility in tree')
               span(class=_class).fa.fa-lg
               span=uppercase(kind)

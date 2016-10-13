@@ -24,15 +24,6 @@ body {
   flex-grow: 1;
 }
 
-.hoverlink {
-  color: inherit;
-  text-decoration: none;
-  &:hover {
-    cursor: pointer;
-    text-decoration: underline;
-  }
-}
-
 .icon, a.icon {
   color: inherit;
   text-decoration: none;
@@ -252,6 +243,7 @@ span.icon {
   flex-grow: 1;
   .tree-element {
     height: @tree-element-height;
+    background: white;
 
     .generate-levels(10);
     .generate-levels(@n, @i: 0) when(@i =< @n) {
@@ -259,6 +251,19 @@ span.icon {
         margin-left: @i * 20px;
       }
       .generate-levels(@n, (@i + 1));
+    }
+    &.hover {
+      filter: invert(100%);
+      & ~ .tree-element {
+        transform: translateY(@tree-element-height);
+      }
+    }
+    &.dragged {
+      opacity: 0.5;
+    }
+    &:focus, &.active {
+      outline: none;
+      filter: invert(100%);
     }
   }
   .tree-filters {
@@ -274,6 +279,9 @@ span.icon {
       .remove {
         color: inherit;
         text-decoration: none;
+        &:hover {
+          cursor: pointer;
+        }
       }
     }
   }
@@ -288,14 +296,20 @@ span.icon {
   }
 }
 
-a.nostyle {
+.nostyle {
   color: inherit;
   text-decoration: none;
 }
-a.hoverstyle {
+.hoverstyle {
+  &:hover {
+    cursor: pointer;
+  }
+}
+.hoverlink {
   color: inherit;
   text-decoration: none;
   &:hover {
+    cursor: pointer;
     text-decoration: underline;
   }
 }

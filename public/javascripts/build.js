@@ -1,3 +1,8 @@
+const SPACE_KEY = 32;
+const DOWNARROW_KEY = 40;
+const UPARROW_KEY = 38;
+const ENTER_KEY = 13;
+
 var Job = Backbone.Model.extend({
   initialize: function(params, options) {
   }
@@ -5,11 +10,12 @@ var Job = Backbone.Model.extend({
 
 var Tree = Backbone.Model.extend({
   initialize: function(params, options) {
-    var str = ['phaseEnabled', 'buildingEnabled', 'componentEnabled', 'buildingDescendants', 'phaseDescendants', 'emptyFolders'].map((e)=>'change:' + e).join(' ');
+    var str = ['rootPhase', 'rootBuilding', 'phaseEnabled', 'buildingEnabled', 'componentEnabled', 'buildingDescendants', 'phaseDescendants', 'emptyFolders'].map((e)=>'change:' + e).join(' ');
     this.on(str, this.build);
     this.listenTo(this.get('job').phases, 'reset', this.recalculate);
     this.listenTo(this.get('job').buildings, 'reset', this.recalculate);
     this.listenTo(this.get('job').components, 'reset', this.recalculate);
+    this.dragged = null;
   },
   recalculate: function() {
     var job = this.get('job');
@@ -26,6 +32,12 @@ var Tree = Backbone.Model.extend({
     buildingDescendants: false,
     phaseDescendants: false,
     emptyFolders: true
+  },
+  rootPhase: function() {
+    return this.get('rootPhase') ? this.get('job').phases.get(this.get('rootPhase')).get('name') : null;
+  },
+  rootBuilding: function() {
+    return this.get('rootBuilding') ? this.get('job').buildings.get(this.get('rootBuilding')).get('name') : null;
   },
   build: function() {
     if(this.func == null) return this.recalculate();
@@ -65,7 +77,7 @@ var BaseView = Backbone.View.extend({
 var Navbar = BaseView.extend({
   el: '#navigation-bar',
   events: {
-    'click .toggle':'toggled'
+    'click .toggle.type':'toggled'
   },
   toggled: function(e) {
     if(!e.currentTarget.checked && ['phase', 'building', 'component'].map((str)=>this.tree.get(str+'Enabled')).filter((e)=>!!e).length < 2) {
@@ -106,13 +118,22 @@ var TreeView = BaseView.extend({
     this.listenTo(this.model, 'build', this.render);
     this.model.build();
   },
+  events: {
+    'click .remove': 'removeRoot'
+  },
+  removeRoot: function(e) {
+    var name = e.currentTarget.getAttribute('name');
+    if(name=='building' || name=='phase') {
+      this.model.set('root'+name[0].toUpperCase()+name.slice(1), null);
+    }
+  },
   render: function() {
     BaseView.prototype.render.call(this);
     if(this.views) this.views.forEach((v)=>v.remove());
     if(this.model.tree) {
       this.views = this.model.tree.map((b)=>{
         var ob = this.model.get('job')[b.type + 's'].get(b._id);
-        return new TreeElementView({model: ob, branch: b});
+        return new TreeElementView({model: ob, branch: b, tree: this.model});
       });
       this.views.forEach((v)=>{
         this.el.appendChild(v.render().el);
@@ -129,6 +150,98 @@ var TreeElementView = BaseView.extend({
     this.listenTo(this.model, 'destroy', this.remove);
     this.bindTo = {model: this.model, branch: this.branch };
     this.setElement(this.template());
+    this.dragtimeout = null;
+  },
+  events: {
+    'dragstart': 'dragstart',
+    'dragend': 'dragend',
+    'dragenter': 'dragenter',
+    'dragleave': 'dragleave',
+    'dragover': 'dragover',
+    'click .root': 'addRoot',
+    'keydown': 'keydown'
+  },
+  keydown: function(e) {
+    if(e.which == SPACE_KEY) {
+      return e.preventDefault();
+    }
+  },
+  addRoot: function(e) {
+    if(this.model instanceof Phase) {
+      this.tree.set('rootPhase', this.model.get('_id'));
+    } else if (this.model instanceof Building) {
+      this.tree.set('rootBuilding', this.model.get('_id'));
+    }
+  },
+  undragstyle: function(e) {
+    this.el.classList.remove('hover');
+    this.dragtimeout = null;
+  },
+  dragstart: function(e) {
+    if(e.target != this.el) return;
+    this.tree.dragged = this.model;
+    this.el.classList.add('dragged');
+  },
+  dragend: function(e) {
+    if(e.target != this.el) return;
+    this.tree.dragged = null;
+    this.el.classList.remove('dragged');
+  },
+  dragstyle: function(e) {
+    this.el.classList.add('hover');
+  },
+  dragenter: function(e) {
+    if(e.target != this.el) return;
+    var placement;
+    if(this.tree.dragged != null && (placement = this.validPlacement(this.tree.dragged))) {
+      console.log(placement);
+      this.dragstyle(e);
+      clearTimeout(this.dragtimeout);
+      this.dragtimeout = setTimeout(this.undragstyle.bind(this), 1000);
+      //var el = TreeElementView.fake({branch: this.branch, model: model});
+    }
+  },
+  dragleave: function(e) {
+    if(e.target != this.el) return;
+    clearTimeout(this.dragtimeout);
+    this.undragstyle(e);
+  },
+  dragover: function(e) {
+    if(e.target != this.el) return;
+    if(this.dragtimeout != null) {
+      clearTimeout(this.dragtimeout);
+      this.dragtimeout = setTimeout(this.undragstyle.bind(this), 1000);
+    }
+  },
+  validPlacement: function(model) {
+    if(this.model == model) return false;
+    if(model instanceof Component) {
+      if(this.model instanceof Component) return false;
+      if(this.model instanceof Building || this.model instanceof Phase) {
+        var i;
+        var branch = this.branch;
+        var phaseBranch;
+        var buildingBranch;
+        var maxlevel = this.branch.level + 1;
+        do {
+          i = this.tree.tree.indexOf(branch);
+          if((this.model instanceof Phase || buildingBranch != null) && branch.level < maxlevel) {
+            if(branch.type == 'phase') {
+              phaseBranch = branch;
+              break;
+            } else {
+              maxlevel = Math.min(branch.level, maxlevel);
+            }
+          } else if(buildingBranch == null && branch.level < maxlevel) {
+            buildingBranch = branch;
+            maxlevel = branch.level;
+          }
+          branch = this.tree.tree[i-1];
+        } while (i > -1 && branch);
+        if(!(phaseBranch == null && buildingBranch == null) && (phaseBranch == null || phaseBranch._id == model.get('phase')) && (buildingBranch == null || buildingBranch._id == model.get('building'))) return false;
+        return {phase: phaseBranch ? phaseBranch._id : this.tree.get('rootPhase'), building: buildingBranch ? buildingBranch._id : this.tree.get('rootBuilding')};
+      }
+    }
   },
   template: function() {
     var el = document.importNode(document.getElementById('tree-element-template').content, true).firstChild;
@@ -138,8 +251,16 @@ var TreeElementView = BaseView.extend({
     this.binding = this.binding || rivets.bind(this.el, this.bindTo);
     return this;
   }
-
 });
+TreeElementView.fake = function(props) {
+  var el = TreeElementView.template();
+  // model, branch
+  var binding = rivets.bind(el, props);
+  var unbind = function() {
+    binding.unbind();
+  };
+  return {el: el, unbind: unbind};
+};
 
 var Element = Backbone.Model.extend({
   idAttribute: '_id'

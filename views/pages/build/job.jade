@@ -133,7 +133,7 @@ block workspace
           - var qstring = ['phase', 'building'].filter((t)=>t!=branch.type).map((a)=>'root' + a[0].toUpperCase() + a.slice(1)).map((el)=>options[el] != null ? el + '=' + options[el] : '').filter((el)=>el!='');
           div.tree-element(level=branch.level)
             span.icon.fa(class=(branch.type == 'phase' ? 'fa-bookmark-o' : branch.type == 'building' ? 'fa-building-o' : 'fa-cubes'))
-            a(href="/app/edit/#{branch.type + 's'}/#{obj._id}").hoverstyle
+            a(href="/app/edit/#{branch.type + 's'}/#{obj._id}").hoverlink
               span.name=obj.name
             if branch.type !== 'component'
               a(href='?' + qstring.concat('root'+branch.type[0].toUpperCase()+branch.type.slice(1)+'='+obj._id).join('&')).nostyle
@@ -153,21 +153,21 @@ block workspace
         .tree#tree
           .tree-filters
             div(rv-if='model:rootPhase')
-              span.fa.fa-close.fa-lg.remove
+              span(name='phase').fa.fa-close.fa-lg.remove
               span Phases
               span.fa.fa-angle-right.fa-lg
-              span { model:rootPhase }
+              span { model.rootPhase | call model:rootPhase }
             div(rv-if='model:rootBuilding')
-              span.fa.fa-close.fa-lg.remove
+              span(name='building').fa.fa-close.fa-lg.remove
               span Buildings
               span.fa.fa-angle-right.fa-lg
-              span { model:rootBuilding }
+              span { model.rootBuilding | call model:rootBuilding }
           template#tree-element-template
-            .tree-element(rv-level='branch.level')
+            .tree-element(rv-level='branch.level', draggable='true', tabindex=1)
               span.icon.fa(rv-class='branch.type | icon_class')
-              a.hoverlink.name(rv-href='model | getURL') { model:name }
-              a(href='/')
-                span.fa.fa-angle-right.fa-lg
+              a.hoverlink.name(rv-href='model | getURL')
+                span { model:name }
+              span(rv-if='branch.type | != "component"').fa.fa-angle-right.fa-lg.root.hoverstyle
               span.description(rv-if='model:description') { model:description }
               span.spacer
               span.icon.fa.fa-angle-right
