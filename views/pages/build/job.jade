@@ -162,11 +162,15 @@ block workspace
               span Buildings
               span.fa.fa-angle-right.fa-lg
               span { model:rootBuilding }
-          .tree-element(rv-each-branch='model.tree')
-            span.icon.fa(class='branch.type | icon_class')
-            a(fa-href='branch._id') { branch._id }
-            span.spacer
-            span.icon.fa.fa-angle-right
+          template#tree-element-template
+            .tree-element(rv-level='branch.level')
+              span.icon.fa(rv-class='branch.type | icon_class')
+              a.hoverlink.name(rv-href='model | getURL') { model:name }
+              a(href='/')
+                span.fa.fa-angle-right.fa-lg
+              span.description(rv-if='model:description') { model:description }
+              span.spacer
+              span.icon.fa.fa-angle-right
            
 
 block template

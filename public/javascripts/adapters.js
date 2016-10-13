@@ -43,15 +43,22 @@ rivets.formatters['='] = {
 }
 
 rivets.formatters['icon_class'] = {
-  read: function(value, arg) {
-    console.log(value);
+  read: function(value) {
+    switch (value) {
+      case 'phase':
+        return 'fa fa-bookmark-o';
+      case 'building':
+        return 'fa fa-building-o';
+      case 'component':
+        return 'fa fa-cubes';
+    }
     return value;
-  },
-  publish: function(value, arg) {
-    console.log(value, arg);
-    return arg;
   }
 }
+
+rivets.formatters.getURL = function(value) {
+  return value.getURL();
+};
 
 rivets.formatters['notnull'] = function(value, arg) {
   return value != null;
