@@ -42,7 +42,7 @@ body {
 }
 
 // used elsewhere
-.active {
+.active-mixin {
   filter: invert(100%);
 }
 .hoverlight {
@@ -54,7 +54,7 @@ body {
 input.toggle[type='checkbox'], input.toggle[type='radio'] {
   display: none;
   &:checked + label {
-  .active;
+  .active-mixin;
   }
   & + label {
     user-select: none;
@@ -160,6 +160,28 @@ span.icon {
         width: ~"calc(100% - 12px);";
         margin: 8px 0;
       }
+      &.offset input {
+        padding-left: 54px;
+      }
+      .search-filters {
+        position: absolute;
+        top: 0;
+        left: 0;
+        margin-left: 0px;
+        height: @navigation-height;
+        .search-filter {
+          border-radius: 5px;
+          border: 2px solid black;
+          font-size: 1.2em;
+          padding: 2px;
+          margin: 4px;
+          display: inline-block;
+          line-height: @navigation-height - 16px;
+          span:not(:first-child) {
+            padding-left: 2px;
+          }
+        }
+      }
     }
 
     .controls {
@@ -186,20 +208,21 @@ span.icon {
           }
         }
       }
-      a.icon {
+      .icon {
         height: @navigation-height;
+        line-height: @navigation-height;
       }
 
       flex-grow: 1;
 
       @media(max-width: (1.5*@med)) {
-        a.icon span:not(:first-child) {
+        .icon span:not(:first-child) {
           display: none;
         }
       }
 
       a.active {
-        .active;
+        .active-mixin;
       }
 
     }
@@ -213,14 +236,17 @@ span.icon {
 
   @media(max-width: @lrg) {
     .search-box {
-      //display: none;
-      margin-top: -10px;
+      display: none;
+      margin-top: 0px;
       padding-top: 10px;
       background: white;
       position: absolute;
       top: 0;
       left: 0;
       box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+      &.active {
+        display: block;
+      }
     }
   }
   @media(min-width: @lrg) {
@@ -233,39 +259,19 @@ span.icon {
 .search-box {
   width: @search-width;
   //background: teal;
+  padding: 0 10px;
+  margin: 0 -10px;
   .search-result {
-    padding: 10px 0;
+    padding: 0 10px;
+    margin: 0 -10px;
+
+    padding: 10px;
     min-height: @navigation-height
   }
 }
 
 .tree {
   flex-grow: 1;
-  .tree-element {
-    height: @tree-element-height;
-    background: white;
-
-    .generate-levels(10);
-    .generate-levels(@n, @i: 0) when(@i =< @n) {
-      &[level='@{i}'] {
-        margin-left: @i * 20px;
-      }
-      .generate-levels(@n, (@i + 1));
-    }
-    &.hover {
-      filter: invert(100%);
-      & ~ .tree-element {
-        transform: translateY(@tree-element-height);
-      }
-    }
-    &.dragged {
-      opacity: 0.5;
-    }
-    &:focus, &.active {
-      outline: none;
-      filter: invert(100%);
-    }
-  }
   .tree-filters {
     display: flex;
     flex-direction: row;
@@ -284,6 +290,37 @@ span.icon {
         }
       }
     }
+  }
+  .tree-element {
+    height: @tree-element-height;
+    &.hover {
+      //filter: invert(100%);
+      outline: 2px solid black;
+      & ~ .tree-element {
+        transform: translateY(@tree-element-height);
+      }
+    }
+    &:focus, &.active {
+      outline: none;
+      filter: invert(100%);
+    }
+  }
+}
+.search-result, .tree-element {
+  background: white;
+  transition: transform 0.2s ease;
+
+  .generate-levels(10);
+  .generate-levels(@n, @i: 0) when(@i =< @n) {
+    &[level='@{i}'] {
+      margin-left: @i * 20px;
+    }
+    .generate-levels(@n, (@i + 1));
+  }
+  &.dragged {
+    opacity: 0.5;
+  }
+  &:focus, &.active {
   }
 }
 

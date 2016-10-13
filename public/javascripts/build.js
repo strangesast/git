@@ -2,6 +2,8 @@ const SPACE_KEY = 32;
 const DOWNARROW_KEY = 40;
 const UPARROW_KEY = 38;
 const ENTER_KEY = 13;
+const ESC_KEY = 27;
+const BACKSPACE_KEY = 8;
 
 var Job = Backbone.Model.extend({
   initialize: function(params, options) {
@@ -77,7 +79,29 @@ var BaseView = Backbone.View.extend({
 var Navbar = BaseView.extend({
   el: '#navigation-bar',
   events: {
-    'click .toggle.type':'toggled'
+    'click .toggle.type':'toggled',
+    'input .search input' : 'input',
+    'keydown .search input' : 'keydown',
+    'blur .search input' : 'blur'
+  },
+  keydown: function(e) {
+    if(e.which == ESC_KEY) {
+      this.blur();
+    } else if (e.which == BACKSPACE_KEY) {
+      if(this.search.get('query') == '' && this.search.get('filters').length) {
+        this.search.set('filters', this.search.get('filters').slice(1));
+      }
+    }
+  },
+  input: function(e) {
+    if(this.search.get('query')) {
+      this.search.set('active', true);
+    } else {
+      this.search.set('active', false);
+    }
+  },
+  blur: function(e) {
+    this.search.set('active', false);
   },
   toggled: function(e) {
     if(!e.currentTarget.checked && ['phase', 'building', 'component'].map((str)=>this.tree.get(str+'Enabled')).filter((e)=>!!e).length < 2) {
@@ -89,6 +113,7 @@ var Navbar = BaseView.extend({
       this[prop] = params[prop];
     }
     this.bindTo = {search: this.search, tree: this.tree, view: this};
+    this.listenTo(this.search, 'change:query', () => this.binding ? this.binding.sync() : null); // hacked
   }
 });
 
@@ -102,9 +127,76 @@ var Description = BaseView.extend({
   }
 });
 
+var startSame = function(string1, string2, threshold) {
+  threshold = Math.min(string1.length, string2.length, threshold || 3);
+  if(threshold < 2) return false;
+  for(var i=0; i<threshold; i++) {
+    if(string1[i]!==string2[i]) return false;
+  }
+  return true;
+}
+
 var Search = Backbone.Model.extend({
   defaults: {
-    query: ''
+    query: '',
+    filters: [],
+    suggestedFilters: [],
+    active: false
+  },
+  initialize: function() {
+    this.on('change:query', this.input);
+    this.on('change:suggestedFilters', this.suggestion);
+  },
+  input: function() {
+    var filters = this.get('filters') || [];
+    var suggestedFilters = [];
+    var query = this.get('query');
+    var names = ['job', 'phase', 'building', 'component'];
+    for(var i=0,name; name=names[i], i<names.length; i++) {
+      if(startSame(query, name)) {
+        if(query.startsWith(name + ':') && filters.indexOf(name) == -1) {
+          filters.push(name);
+          query = '';
+          break;
+        } else {
+          suggestedFilters.push(name + ':');
+          continue;
+        }
+      }
+    }
+    this.set({'suggestedFilters': suggestedFilters, 'query': query, filters: filters.slice()});
+    this.set('filters', filters);
+  },
+  suggestion: function() {
+    console.log(this.get('filters'));
+    console.log(this.get('suggestedFilters'));
+  }
+});
+
+var SearchResults = BaseView.extend({
+  el: '#search-results',
+  initialize: function(params, options) {
+    this.search = params.search;
+    this.listenTo(this.search, 'change:active', this.toggle);
+    this.bindTo = {model: this.model, search: this.search};
+  },
+  events: {
+    'dragstart': 'dragstart',
+    'dragend': 'dragend'
+  },
+  toggle: function(e) {
+    if(e.changed.active == null) return;
+    if(e.changed.active) {
+      this.el.classList.add('active');
+    } else {
+      this.el.classList.remove('active');
+    }
+  },
+  dragstart: function(e) {
+    e.target.classList.add('dragged');
+  },
+  dragend: function(e) {
+    e.target.classList.remove('dragged');
   }
 });
 
@@ -306,6 +398,9 @@ job.buildings = buildings;
 job.components = components;
 
 var searchModel = new Search();
+var searchView = new SearchResults({model: searchModel, search: searchModel});
+searchView.render();
+
 var treeModel = new Tree({job: job});
 
 var treeView = new TreeView({model: treeModel});

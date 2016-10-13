@@ -35,8 +35,16 @@
   // tree model view
   template
     .container#navigation-bar
-      .search
-        input(type='text', name='query', placeholder='search', rv-value='search:query')
+      .search(rv-class-offset='search:filters | len')
+        .search-filters(rv-if='search:filters | len')
+          .search-filter(rv-each-filter='search:filters')
+            span.fa.fa-times
+            span { filter }
+
+        input(list='suggestions', autocomplete='off', type='text', name='query', placeholder='search', rv-value='search:query')
+        datalist#suggestions
+          option(rv-each-suggestion='search:suggestedFilters', rv-value='suggestion')
+
       .controls
         .left
           each kind, i in kinds

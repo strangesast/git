@@ -64,6 +64,10 @@ rivets.formatters['icon_class'] = {
   }
 }
 
+rivets.formatters.len = function(value) {
+  return value.length;
+}
+
 rivets.formatters.getURL = function(value) {
   return value.getURL();
 };
