@@ -86,6 +86,7 @@ block scripts
   script.
     var PREFETCH = {};
     PREFETCH.job = JSON.parse('!{newline_escape(JSON.stringify(job))}');
+    PREFETCH.jobs = JSON.parse('!{newline_escape(JSON.stringify(jobs))}');
     PREFETCH.phases = JSON.parse('!{newline_escape(JSON.stringify(phases))}');
     PREFETCH.buildings = JSON.parse('!{newline_escape(JSON.stringify(buildings))}');
     PREFETCH.components = JSON.parse('!{newline_escape(JSON.stringify(components))}');

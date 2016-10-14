@@ -86,13 +86,16 @@ router.get('/:username/:shortname', function(req, res, next) {
         .populate('building', 'name')
         .populate('parts')
       )).then(function(arr) {
+        console.log(arr);
         return {phases: arr[0], buildings: arr[1], components: arr[2]};
       });
 
-      return Promise.all([allPromise, treePromise, partPromise, queryPromise]).then(function(all) {
+      var jobsPromise = Job.find({});
+
+      return Promise.all([allPromise, treePromise, partPromise, queryPromise, jobsPromise]).then(function(all) {
         var data = all[0];
-        console.log(JSON.stringify(job));
         data.job = job;
+        data.jobs = all[4];
         data.tree = all[1].tree;
         data.included = all[1].included;
         data.parts = all[2];

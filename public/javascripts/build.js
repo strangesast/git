@@ -473,6 +473,7 @@ var Component = Element.extend({
 });
 var Collection = Backbone.Collection.extend({});
 var Jobs = Collection.extend({
+  url: '/api/jobs',
   model: Job
 });
 var Phases = Collection.extend({
@@ -490,8 +491,8 @@ var phases = new Phases();
 var buildings = new Buildings();
 var components = new Components();
 
-jobs.reset([PREFETCH.job]);
-console.log(PREFETCH.job);
+jobs.reset(PREFETCH.jobs);
+console.log(PREFETCH.jobs);
 job = jobs.get(PREFETCH.job['_id']);
 job.phases = phases;
 job.buildings = buildings;
