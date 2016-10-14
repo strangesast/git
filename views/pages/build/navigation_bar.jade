@@ -35,13 +35,13 @@
   // tree model view
   template
     .container#navigation-bar
-      .search(rv-class-offset='search:filters | len')
+      .search
         .search-filters(rv-if='search:filters | len')
-          .search-filter(rv-each-filter='search:filters')
-            span.fa.fa-times
-            span { filter }
+          .search-filter(rv-each-filter='search:filters', name='filter.name')
+            span.fa.fa-times.remove
+            span { filter.name }
 
-        input(list='suggestions', autocomplete='off', type='text', name='query', placeholder='search', rv-value='search:query')
+        input(list='suggestions', autocomplete='off', type='text', name='query', placeholder='search', rv-value='search:query', rv-style='search:filters | offsetlen')
         datalist#suggestions
           option(rv-each-suggestion='search:suggestedFilters', rv-value='suggestion')
 

@@ -175,10 +175,11 @@ span.icon {
           font-size: 1.2em;
           padding: 2px;
           margin: 4px;
+          margin-right: 0px;
           display: inline-block;
           line-height: @navigation-height - 16px;
           span:not(:first-child) {
-            padding-left: 2px;
+            padding-left: 4px;
           }
         }
       }
@@ -267,7 +268,11 @@ span.icon {
     margin: 0 -10px;
 
     padding: 10px;
-    min-height: @navigation-height
+    min-height: @navigation-height;
+
+    .filter {
+      .hoverlink;
+    }
   }
 }
 

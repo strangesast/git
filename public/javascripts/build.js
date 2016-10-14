@@ -6,6 +6,8 @@ const ESC_KEY = 27;
 const BACKSPACE_KEY = 8;
 
 var Job = Backbone.Model.extend({
+  type: 'job',
+  idAttribute: '_id',
   initialize: function(params, options) {
   }
 });
@@ -82,14 +84,15 @@ var Navbar = BaseView.extend({
     'click .toggle.type':'toggled',
     'input .search input' : 'input',
     'keydown .search input' : 'keydown',
-    'blur .search input' : 'blur'
+    'blur .search input' : 'blur',
+    'cilck .remove': 'removeFilter'
   },
   keydown: function(e) {
     if(e.which == ESC_KEY) {
       this.blur();
     } else if (e.which == BACKSPACE_KEY) {
       if(this.search.get('query') == '' && this.search.get('filters').length) {
-        this.search.set('filters', this.search.get('filters').slice(1));
+        this.search.set('filters', this.search.get('filters').slice(0, -1));
       }
     }
   },
@@ -107,6 +110,9 @@ var Navbar = BaseView.extend({
     if(!e.currentTarget.checked && ['phase', 'building', 'component'].map((str)=>this.tree.get(str+'Enabled')).filter((e)=>!!e).length < 2) {
       return e.preventDefault();
     }
+  },
+  removeFilter: function(e) {
+    console.log(e);
   },
   initialize: function(params, options) {
     for(var prop in params) {
@@ -141,35 +147,99 @@ var Search = Backbone.Model.extend({
     query: '',
     filters: [],
     suggestedFilters: [],
-    active: false
+    active: false,
+    results: []
   },
-  initialize: function() {
+  initialize: function(params, options) {
     this.on('change:query', this.input);
     this.on('change:suggestedFilters', this.suggestion);
+    this.collections = options.collections;
   },
   input: function() {
-    var filters = this.get('filters') || [];
-    var suggestedFilters = [];
     var query = this.get('query');
-    var names = ['job', 'phase', 'building', 'component'];
-    for(var i=0,name; name=names[i], i<names.length; i++) {
-      if(startSame(query, name)) {
-        if(query.startsWith(name + ':') && filters.indexOf(name) == -1) {
-          filters.push(name);
-          query = '';
-          break;
-        } else {
-          suggestedFilters.push(name + ':');
-          continue;
+    var filters = this.get('filters');
+    //var results = this.get('results');
+    var results = [];
+    var filterKinds = [];
+
+    var b = false;
+    var model, models;
+    for(var i=0,filter; filter=filters[i], i<filters.length; i++) {
+      if(filter.kind == 'type') {
+        var col;
+        switch(filter.type) {
+          case 'job':
+            col = col || this.collections.jobs;
+          case 'phase':
+            col = col || this.collections.phases;
+          case 'building':
+            col = col || this.collections.buildings;
+          case 'component':
+            col = col || this.collections.components;
+            if(model = col.get(query)) {
+              filters.splice(i, 1);
+              filters.push({
+                kind: 'property',
+                property: filter.type,
+                value: model.get('_id'),
+                name: model.get('name')
+              });
+              query = '';
+              b = true;
+
+            } else {
+              results = col.filter((j)=>j.get('name').toLowerCase().startsWith(query.toLowerCase()));
+            }
+            break;
+        }
+      } else if (filter.kind == 'property') {
+        // looking for model with this 'filter.property'
+        switch(filter.property) {
+          case 'job':
+            // phases, components, buildings
+            results = ['phases', 'components', 'buildings'].map((t)=>this.collections[t].filter((m)=>m.get('job') == filter.value && m.get('name').toLowerCase().startsWith(query.toLowerCase()))).reduce((a,b)=>a.concat(b));
+            break;
+          case 'phase':
+          case 'building':
+            // components
+            results = ['components'].map((t)=>this.collections[t].filter((m)=>m.get(filter.property) == filter.value && m.get('name').toLowerCase().startsWith(query.toLowerCase()))).reduce((a,b)=>a.concat(b));
+            break;
+          case 'parent':
+            // phases, buildings
+            results = ['phases', 'buildings'].map((t)=>this.collections[t].filter((m)=>m.get('parent') == filter.value && m.get('name').toLowerCase().startsWith(query.toLowerCase()))).reduce((a,b)=>a.concat(b));
+            break;
         }
       }
     }
-    this.set({'suggestedFilters': suggestedFilters, 'query': query, filters: filters.slice()});
-    this.set('filters', filters);
+    if(!b) {
+      var prefixes = ['job', 'phase', 'building', 'component'];
+      for(var j=0,prefix; prefix=prefixes[j],j < prefixes.length; j++) {
+        if(query.startsWith(prefix + ':')) {
+          query = query.slice(prefix.length+1);
+          if(filters.filter((f)=>f.kind=='type'&&f.type==prefix).length == 0) {
+            filters.push({
+              kind: 'type',
+              type: prefix,
+              name: prefix
+            });
+          }
+          break;
+        }
+      }
+    }
+
+    this.set({
+      results: results,
+      filters: _.clone(filters),
+      query: query
+    });
+    this.trigger('change', this);
+    this.trigger('change:filters', this);
+  },
+  getFilters: function() {
+    return this.get('filters');
   },
   suggestion: function() {
-    console.log(this.get('filters'));
-    console.log(this.get('suggestedFilters'));
   }
 });
 
@@ -178,11 +248,19 @@ var SearchResults = BaseView.extend({
   initialize: function(params, options) {
     this.search = params.search;
     this.listenTo(this.search, 'change:active', this.toggle);
+    //this.listenTo(this.search, 'change:results', this.update);
     this.bindTo = {model: this.model, search: this.search};
   },
   events: {
     'dragstart': 'dragstart',
-    'dragend': 'dragend'
+    'dragend': 'dragend',
+    'click .filter' : 'addFilter'
+  },
+  addFilter: function(e) {
+    var parEl = e.currentTarget.parentElement;
+    var type = parEl.getAttribute('data-type');
+    var id = parEl.getAttribute('data-id');
+    this.search.set('query', type + ':' + id);
   },
   toggle: function(e) {
     if(e.changed.active == null) return;
@@ -197,6 +275,9 @@ var SearchResults = BaseView.extend({
   },
   dragend: function(e) {
     e.target.classList.remove('dragged');
+  },
+  update: function(e) {
+    console.log(this.search.get('results'));
   }
 });
 
@@ -373,25 +454,26 @@ var Element = Backbone.Model.extend({
   idAttribute: '_id'
 });
 var Phase = Element.extend({
+  type: 'phase',
   getURL: function() {
     return '/app/edit/phases/' + this.get(this.idAttribute);
   }
 });
 var Building = Element.extend({
+  type: 'building',
   getURL: function() {
     return '/app/edit/buildings/' + this.get(this.idAttribute);
   }
 });
 var Component = Element.extend({
+  type: 'component',
   getURL: function() {
     return '/app/edit/component/' + this.get(this.idAttribute);
   }
 });
-var Collection = Backbone.Collection.extend({
-  parse: function() {
-    console.log(arguments);
-    return Backbone.Collection.prototype.parse.apply(this, arguments);
-  }
+var Collection = Backbone.Collection.extend({});
+var Jobs = Collection.extend({
+  model: Job
 });
 var Phases = Collection.extend({
   model: Phase
@@ -403,16 +485,19 @@ var Components = Collection.extend({
   model: Component
 });
 
+var jobs = new Jobs();
 var phases = new Phases();
 var buildings = new Buildings();
 var components = new Components();
 
-var job = new Job(PREFETCH.job);
+jobs.reset([PREFETCH.job]);
+console.log(PREFETCH.job);
+job = jobs.get(PREFETCH.job['_id']);
 job.phases = phases;
 job.buildings = buildings;
 job.components = components;
 
-var searchModel = new Search();
+var searchModel = new Search(null, {collections: {phases: phases, buildings: buildings, components: components, jobs: jobs}});
 var searchView = new SearchResults({model: searchModel, search: searchModel});
 searchView.render();
 

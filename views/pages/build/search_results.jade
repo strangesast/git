@@ -101,6 +101,10 @@
 
   template
     .search-box#search-results
+      .search-result(rv-each-result='search:results', rv-data-type='result.type', rv-data-id='result:_id', draggable='true', tabindex=2)
+        div { result:name }
+        div { result.type }
+        div.filter(rv-if='result.type | != "component"') Add filter
       .search-result(draggable='true', tabindex=2)
         h3 New Phase
       .search-result(draggable='true', tabindex=2)
