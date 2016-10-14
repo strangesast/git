@@ -247,9 +247,9 @@ var TreeElementView = BaseView.extend({
   events: {
     'dragstart': 'dragstart',
     'dragend': 'dragend',
-    'dragenter': 'dragenter',
-    'dragleave': 'dragleave',
-    'dragover': 'dragover',
+    'dragenter .mask': 'dragenter',
+    'dragleave .mask': 'dragleave',
+    'dragover .mask': 'dragover',
     'click .root': 'addRoot',
     'keydown': 'keydown'
   },
@@ -270,42 +270,53 @@ var TreeElementView = BaseView.extend({
     this.dragtimeout = null;
   },
   dragstart: function(e) {
-    if(e.target != this.el) return;
+    //if(e.target != this.el) return;
     this.tree.dragged = this.model;
     this.el.classList.add('dragged');
+    this.el.parentElement.classList.add('dragging');
   },
   dragend: function(e) {
     if(e.target != this.el) return;
     this.tree.dragged = null;
     this.el.classList.remove('dragged');
+    this.el.parentElement.classList.remove('dragging');
+    if(TreeElementView.el && TreeElementView.el.parentElement) TreeElementView.el.parentElement.removeChild(TreeElementView.el);
   },
-  dragstyle: function(e) {
+  dragstyle: function(e, el) {
+    if(el) {
+      if(el.parentElement == null) {
+        this.el.parentElement.appendChild(el);
+      }
+      var str = 'translateY(' + String(Number(this.el.offsetTop)+60) + 'px )';
+      console.log(str, this.el.offsetTop);
+      el.style.transform = str;
+      console.log(el.parentElement);
+    }
     this.el.classList.add('hover');
   },
   dragenter: function(e) {
-    if(e.target != this.el) return;
+    //if(e.target != this.el) return;
     var placement;
-    if(this.tree.dragged != null && (placement = this.validPlacement(this.tree.dragged))) {
-      console.log(placement);
-      this.dragstyle(e);
-      clearTimeout(this.dragtimeout);
+    var sibling = e.currentTarget.getAttribute('name') === 'left';
+    clearTimeout(this.dragtimeout);
+    if(this.tree.dragged != null && (placement = this.validPlacement(this.tree.dragged, sibling))) {
+      var el = TreeElementView.fake({branch: {level: this.branch.level + (sibling ? 0 : 1), type: 'component'}, model: this.tree.dragged});
+      this.dragstyle(e, el);
       this.dragtimeout = setTimeout(this.undragstyle.bind(this), 1000);
-      //var el = TreeElementView.fake({branch: this.branch, model: model});
     }
   },
   dragleave: function(e) {
-    if(e.target != this.el) return;
     clearTimeout(this.dragtimeout);
-    this.undragstyle(e);
+    this.dragtimeout = setTimeout(this.undragstyle.bind(this, e), 100);
   },
   dragover: function(e) {
-    if(e.target != this.el) return;
     if(this.dragtimeout != null) {
       clearTimeout(this.dragtimeout);
       this.dragtimeout = setTimeout(this.undragstyle.bind(this), 1000);
     }
   },
-  validPlacement: function(model) {
+  validPlacement: function(model, isSibling) {
+    // sibling or child
     if(this.model == model) return false;
     if(model instanceof Component) {
       if(this.model instanceof Component) return false;
@@ -314,7 +325,7 @@ var TreeElementView = BaseView.extend({
         var branch = this.branch;
         var phaseBranch;
         var buildingBranch;
-        var maxlevel = this.branch.level + 1;
+        var maxlevel = this.branch.level + (!isSibling ? 1 : 0);
         do {
           i = this.tree.tree.indexOf(branch);
           if((this.model instanceof Phase || buildingBranch != null) && branch.level < maxlevel) {
@@ -344,14 +355,18 @@ var TreeElementView = BaseView.extend({
     return this;
   }
 });
+TreeElementView.el = null;
+TreeElementView.binding = null;
 TreeElementView.fake = function(props) {
-  var el = TreeElementView.template();
-  // model, branch
-  var binding = rivets.bind(el, props);
-  var unbind = function() {
-    binding.unbind();
-  };
-  return {el: el, unbind: unbind};
+  if(TreeElementView.el == null) {
+    TreeElementView.el = TreeElementView.prototype.template.call(this);
+    TreeElementView.el.classList.add('fake');
+    // model, branch
+  } else {
+    TreeElementView.binding.unbind();
+  }
+  TreeElementView.binding = rivets.bind(TreeElementView.el, props);
+  return TreeElementView.el;
 };
 
 var Element = Backbone.Model.extend({

@@ -69,7 +69,7 @@ rivets.formatters.len = function(value) {
 }
 
 rivets.formatters.getURL = function(value) {
-  return value.getURL();
+  return (value && value.getURL != null) ?  value.getURL() : null;
 };
 
 rivets.formatters['notnull'] = function(value, arg) {

@@ -241,6 +241,7 @@ span.icon {
       padding-top: 10px;
       background: white;
       position: absolute;
+      z-index: 20;
       top: 0;
       left: 0;
       box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
@@ -272,6 +273,8 @@ span.icon {
 
 .tree {
   flex-grow: 1;
+  position: relative;
+
   .tree-filters {
     display: flex;
     flex-direction: row;
@@ -292,11 +295,13 @@ span.icon {
     }
   }
   .tree-element {
+    position: relative;
     height: @tree-element-height;
+    z-index: 5;
     &.hover {
       //filter: invert(100%);
       outline: 2px solid black;
-      & ~ .tree-element {
+      & ~ .tree-element:not(.fake) {
         transform: translateY(@tree-element-height);
       }
     }
@@ -304,6 +309,38 @@ span.icon {
       outline: none;
       filter: invert(100%);
     }
+
+    &.fake {
+      position: absolute;
+      right: 0;
+      top: 0;
+      left: 0;
+      //background: red;
+      z-index: 4;
+      .active-mixin;
+      &.hidden {
+        display: none;
+      }
+    }
+    .mask.left, .mask.right {
+      display: none;
+      position: absolute;
+      width: 50%;
+      height: 100%;
+      top: 0;
+      opacity: 0.25;
+    }
+    .mask.left {
+      left: 0;
+      //background: red;
+    }
+    .mask.right {
+      right: 0;
+      //background: green;
+    }
+  }
+  &.dragging > .tree-element > .mask {
+    display: block;
   }
 }
 .search-result, .tree-element {
