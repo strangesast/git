@@ -5,25 +5,47 @@ const ENTER_KEY = 13;
 const ESC_KEY = 27;
 const BACKSPACE_KEY = 8;
 
+var nameToModel = function(name) {
+  switch(name) {
+    case 'phase':
+      return Phase;
+    case 'building':
+      return Building;
+    case 'component':
+      return Component;
+    default:
+      throw new Error('invalid name "'+name+'"');
+  }
+}
+
 var Job = Backbone.Model.extend({
   type: 'job',
   idAttribute: '_id',
   initialize: function(params, options) {
+    this.collections = options.collections || {};
   }
 });
 
 var Tree = Backbone.Model.extend({
   initialize: function(params, options) {
+    this.job = options.job;
     var str = ['rootPhase', 'rootBuilding', 'phaseEnabled', 'buildingEnabled', 'componentEnabled', 'buildingDescendants', 'phaseDescendants', 'emptyFolders'].map((e)=>'change:' + e).join(' ');
     this.on(str, this.build);
-    this.listenTo(this.get('job').phases, 'reset', this.recalculate);
-    this.listenTo(this.get('job').buildings, 'reset', this.recalculate);
-    this.listenTo(this.get('job').components, 'reset', this.recalculate);
+
+    this.listenTo(this.job.collections.phases, 'reset', this.recalculate);
+    this.listenTo(this.job.collections.buildings, 'reset', this.recalculate);
+    this.listenTo(this.job.collections.components, 'reset', this.recalculate);
+
+    this.listenTo(this.job.collections.phases, 'change sync', this.recalculate);
+    this.listenTo(this.job.collections.buildings, 'change sync', this.recalculate);
+    this.listenTo(this.job.collections.components, 'change sync', this.recalculate);
+
+
     this.dragged = null;
   },
   recalculate: function() {
-    var job = this.get('job');
-    var data = ['phases', 'buildings', 'components'].map((m)=>job[m].toJSON());
+    var job = this.job;
+    var data = ['phases', 'buildings', 'components'].map((m)=>job.collections[m].toJSON());
     this.func = common.assembleTree(data);
     this.build();
   },
@@ -38,10 +60,10 @@ var Tree = Backbone.Model.extend({
     emptyFolders: true
   },
   rootPhase: function() {
-    return this.get('rootPhase') ? this.get('job').phases.get(this.get('rootPhase')).get('name') : null;
+    return this.get('rootPhase') ? this.job.collections.phases.get(this.get('rootPhase')).get('name') : null;
   },
   rootBuilding: function() {
-    return this.get('rootBuilding') ? this.get('job').buildings.get(this.get('rootBuilding')).get('name') : null;
+    return this.get('rootBuilding') ? this.job.collections.buildings.get(this.get('rootBuilding')).get('name') : null;
   },
   build: function() {
     if(this.func == null) return this.recalculate();
@@ -159,7 +181,7 @@ var Search = Backbone.Model.extend({
     var query = this.get('query');
     var filters = this.get('filters');
     //var results = this.get('results');
-    var results = [];
+    var results;
     var filterKinds = [];
 
     var b = false;
@@ -228,8 +250,10 @@ var Search = Backbone.Model.extend({
       }
     }
 
+    results = results || ['components', 'phases', 'buildings'].map((t)=>this.collections[t].filter((m)=>t == 'component' ? m.get('description').toLowerCase().startsWith(query.toLowerCase()) : m.get('name').toLowerCase().startsWith(query.toLowerCase()))).reduce((a,b)=>a.concat(b));
+
     this.set({
-      results: results,
+      results: results || [],
       filters: _.clone(filters),
       query: query
     });
@@ -247,12 +271,15 @@ var SearchResults = BaseView.extend({
   el: '#search-results',
   initialize: function(params, options) {
     this.search = params.search;
+    this.tree = params.treeView.model;
+    this.treeView = params.treeView;
     this.listenTo(this.search, 'change:active', this.toggle);
     //this.listenTo(this.search, 'change:results', this.update);
     this.bindTo = {model: this.model, search: this.search};
   },
   events: {
     'dragstart': 'dragstart',
+    'drop': 'dragdrop',
     'dragend': 'dragend',
     'click .filter' : 'addFilter'
   },
@@ -271,10 +298,34 @@ var SearchResults = BaseView.extend({
     }
   },
   dragstart: function(e) {
-    e.target.classList.add('dragged');
+    var target = e.target;
+    target.classList.add('dragged');
+    var type = target.getAttribute('data-type');
+    if(['part', 'component', 'phase', 'building'].indexOf(type) == -1) return;
+    var id = target.getAttribute('data-id');
+
+    var model;
+    if(id != null && ['component'].indexOf(type) !== -1) {
+      model = this.search.collections[type + 's'].get(id); // should also search other jobs
+    }
+
+    if(id != null && !model) {
+      return;
+    }
+
+    if(id == null) {
+      var Model = nameToModel(type);
+      model = new Model({name: 'New ' + type[0].toUpperCase() + type.slice(1)});
+    }
+
+    this.tree.dragged = model;
+    this.treeView.el.classList.add('dragging');
   },
   dragend: function(e) {
     e.target.classList.remove('dragged');
+    this.treeView.el.classList.remove('dragging');
+    this.tree.dragged = null;
+    TreeElementView.clear();
   },
   update: function(e) {
     console.log(this.search.get('results'));
@@ -305,7 +356,7 @@ var TreeView = BaseView.extend({
     if(this.views) this.views.forEach((v)=>v.remove());
     if(this.model.tree) {
       this.views = this.model.tree.map((b)=>{
-        var ob = this.model.get('job')[b.type + 's'].get(b._id);
+        var ob = this.model.job.collections[b.type + 's'].get(b._id);
         return new TreeElementView({model: ob, branch: b, tree: this.model});
       });
       this.views.forEach((v)=>{
@@ -331,6 +382,7 @@ var TreeElementView = BaseView.extend({
     'dragenter .mask': 'dragenter',
     'dragleave .mask': 'dragleave',
     'dragover .mask': 'dragover',
+    'drop': 'dragdrop',
     'click .root': 'addRoot',
     'keydown': 'keydown'
   },
@@ -361,6 +413,7 @@ var TreeElementView = BaseView.extend({
     this.tree.dragged = null;
     this.el.classList.remove('dragged');
     this.el.parentElement.classList.remove('dragging');
+    TreeElementView.clear();
     if(TreeElementView.el && TreeElementView.el.parentElement) TreeElementView.el.parentElement.removeChild(TreeElementView.el);
   },
   dragstyle: function(e, el) {
@@ -369,9 +422,7 @@ var TreeElementView = BaseView.extend({
         this.el.parentElement.appendChild(el);
       }
       var str = 'translateY(' + String(Number(this.el.offsetTop)+60) + 'px )';
-      console.log(str, this.el.offsetTop);
       el.style.transform = str;
-      console.log(el.parentElement);
     }
     this.el.classList.add('hover');
   },
@@ -384,16 +435,70 @@ var TreeElementView = BaseView.extend({
       var el = TreeElementView.fake({branch: {level: this.branch.level + (sibling ? 0 : 1), type: 'component'}, model: this.tree.dragged});
       this.dragstyle(e, el);
       this.dragtimeout = setTimeout(this.undragstyle.bind(this), 1000);
+      e.preventDefault();
     }
+  },
+  dragdrop: function(e) {
+    clearTimeout(this.dragtimeout);
+    TreeElementView.clear();
+
+    var model = this.tree.dragged;
+    if(model == null) return console.log('nothing "dragged"');
+    var placement = this.validPlacement(model);
+
+    var job = this.tree.job;
+
+    var collection = job.collections[model.type + 's'];
+
+    if(!collection.contains(model)) {
+      model = model.clone();
+    }
+
+    if(model instanceof Component) {
+      model.set({
+        job: job.get('_id'),
+        phase: placement.phase || model.get('phase'),
+        building: placement.building || model.get('building')
+      });
+
+    } else if (model instanceof Building) {
+      model.set({
+        job: job.get('_id'),
+        'parent': placement.building
+      });
+
+    } else if (model instanceof Phase) {
+      model.set({
+        job: job.get('_id'),
+        'parent': placement.phase
+      });
+
+    } else {
+      throw new Error('unsupported');
+    }
+
+
+    if(!collection.contains(model)) {
+      collection.create(model.attributes);
+    }
+    e.originalEvent.preventDefault();
+
+    this.tree.dragged = null;
+    this.undragstyle();
   },
   dragleave: function(e) {
     clearTimeout(this.dragtimeout);
     this.dragtimeout = setTimeout(this.undragstyle.bind(this, e), 100);
   },
   dragover: function(e) {
-    if(this.dragtimeout != null) {
-      clearTimeout(this.dragtimeout);
-      this.dragtimeout = setTimeout(this.undragstyle.bind(this), 1000);
+    var placement;
+    var sibling = e.currentTarget.getAttribute('name') === 'left';
+    if(this.tree.dragged != null && (placement = this.validPlacement(this.tree.dragged, sibling))) {
+      if(this.dragtimeout != null) {
+        clearTimeout(this.dragtimeout);
+        this.dragtimeout = setTimeout(this.undragstyle.bind(this), 1000);
+      }
+      e.preventDefault();
     }
   },
   validPlacement: function(model, isSibling) {
@@ -438,9 +543,15 @@ var TreeElementView = BaseView.extend({
 });
 TreeElementView.el = null;
 TreeElementView.binding = null;
+TreeElementView.clear = function() {
+  if(TreeElementView.el == null) return;
+  if(TreeElementView.binding) TreeElementView.binding.unbind();
+  if(TreeElementView.el.parentElement) TreeElementView.el.parentElement.removeChild(TreeElementView.el);
+  TreeElementView.el = null;
+}
 TreeElementView.fake = function(props) {
   if(TreeElementView.el == null) {
-    TreeElementView.el = TreeElementView.prototype.template.call(this);
+    TreeElementView.el = TreeElementView.prototype.template.call(null);
     TreeElementView.el.classList.add('fake');
     // model, branch
   } else {
@@ -469,6 +580,16 @@ var Component = Element.extend({
   type: 'component',
   getURL: function() {
     return '/app/edit/component/' + this.get(this.idAttribute);
+  },
+  getBuilding: function() {
+    if(this.get('job') == null) return null;
+    var building = jobs.get(this.get('job')).collections.buildings.get(this.get('building'));
+    return building ? building.get('name') : null;
+  },
+  getPhase: function() {
+    if(this.get('job') == null) return null;
+    var phase = jobs.get(this.get('job')).collections.phases.get(this.get('phase'));
+    return phase ? phase.get('name') : null;
   }
 });
 var Collection = Backbone.Collection.extend({});
@@ -477,12 +598,15 @@ var Jobs = Collection.extend({
   model: Job
 });
 var Phases = Collection.extend({
+  url: '/api/phases',
   model: Phase
 });
 var Buildings = Collection.extend({
+  url: '/api/buildings',
   model: Building
 });
 var Components = Collection.extend({
+  url: '/api/components',
   model: Component
 });
 
@@ -492,19 +616,25 @@ var buildings = new Buildings();
 var components = new Components();
 
 jobs.reset(PREFETCH.jobs);
-console.log(PREFETCH.jobs);
 job = jobs.get(PREFETCH.job['_id']);
-job.phases = phases;
-job.buildings = buildings;
-job.components = components;
 
-var searchModel = new Search(null, {collections: {phases: phases, buildings: buildings, components: components, jobs: jobs}});
-var searchView = new SearchResults({model: searchModel, search: searchModel});
-searchView.render();
+phases.url = '/api/jobs/' + job.get('_id') + '/phases'
+buildings.url = '/api/jobs/' + job.get('_id') + '/buildings'
+components.url = '/api/jobs/' + job.get('_id') + '/components'
 
-var treeModel = new Tree({job: job});
+job.collections.phases = phases;
+job.collections.buildings = buildings;
+job.collections.components = components;
+
+var treeModel = new Tree(null, {job: job});
 
 var treeView = new TreeView({model: treeModel});
+
+var searchModel = new Search(null, {collections: {phases: phases, buildings: buildings, components: components, jobs: jobs}});
+var searchView = new SearchResults({model: searchModel, search: searchModel, treeView: treeView});
+searchView.render();
+
+
 
 
 var navbar = new Navbar({tree: treeModel, search: searchModel}); 
@@ -521,10 +651,10 @@ var cleanup = function(ob) {
     ob.parent = ob.parent._id;
   }
   if(typeof ob.phase === 'object') {
-    ob.phase = ob.phase._id;
+    ob.phase = ob.phase != null ? ob.phase._id : null;
   }
   if(typeof ob.building === 'object') {
-    ob.building = ob.building._id;
+    ob.building = ob.building != null ? ob.building._id : null;
   }
 }
 

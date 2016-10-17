@@ -130,7 +130,7 @@ router.route('/:name/:id?')
 })
 .all(function(req, res, next) {
   if(!req.user) {
-    return next({status: 401, message: 'unauthorized'});
+    //return next({status: 401, message: 'unauthorized'});
   }
   return next();
 })
@@ -311,6 +311,10 @@ router.route('/:name1/:id1/:name2')
   }).catch(function(err) {
     next(err);
   });
+});
+
+router.all('/:name1/:id1/:name2/:id2', function(req, res, next) {
+  res.redirect('/api/' + path.join(req.params.name2, req.params.id2));
 });
 
 module.exports = router;

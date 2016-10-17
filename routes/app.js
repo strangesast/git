@@ -63,7 +63,7 @@ router.get('/edit/:name/:id', function(req, res, next) {
 
   switch(Model.modelName) {
     case 'Component':
-      stream = stream.populate('parts');
+      stream = stream.populate('parts').populate('phase').populate('building');
       break;
     case 'Phase':
       strem = stream.populate('parent');

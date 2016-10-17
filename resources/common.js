@@ -31,6 +31,9 @@ var common = (function() {
         var included = {phases: {}, buildings: {}, components: {}};
         var tree = [];
 
+        //phaseEnabled = phaseEnabled == null ? true : !!phaseEnabled;
+        //buildingEnabled = buildingEnabled == null ? true : !!buildingEnabled;
+
         // simplify stuff later
         var append = function(arr) {
           for(var i=0; i < arr.length; i++) {
@@ -46,11 +49,21 @@ var common = (function() {
           }
         };
 
-        if(!phaseEnabled) phaseDescendants = true;
-        if(!buildingEnabled) buildingDescendants = true;
-        // doesn't make sense when type is enabled
-        //phaseDescendants = !phaseEnabled && phaseDescendants;
-        //buildingDescendants = !buildingEnabled && buildingDescendants;
+        if(buildingEnabled && phaseEnabled) {
+          phaseDescendants = false;
+          buildingDescendants = false;
+
+        } else if(!phaseEnabled && !buildingEnabled) {
+          phaseDescendants = true;
+          buildingDescendants = true;
+
+        } else if (phaseEnabled && !buildingEnabled) {
+          buildingDescendants = true;
+
+        } else if(!phaseEnabled && buildingEnabled) {
+          phaseDescendants = true;
+
+        }
 
         // for determining descendants
         var phases, buildings;

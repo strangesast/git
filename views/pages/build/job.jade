@@ -71,6 +71,8 @@ block workspace
                 span.fa.fa-angle-right.fa-lg
               span.description(rv-if='model:description') { model:description }
               span.spacer
+              span(rv-if='branch.type | = "component"') { model.getBuilding | call model:building }
+              span(rv-if='branch.type | = "component"') { model.getPhase | call model:phase }
               span.icon.fa.fa-angle-right
               .mask.left(name='left')
               .mask.right(name='right')

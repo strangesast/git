@@ -76,6 +76,10 @@ rivets.formatters.getURL = function(value) {
   return (value && value.getURL != null) ?  value.getURL() : null;
 };
 
+rivets.formatters.isPart = function(value) {
+  return ['component', 'part'].indexOf(value) !== -1 ? 'true' : false;
+};
+
 rivets.formatters['notnull'] = function(value, arg) {
   return value != null;
 };

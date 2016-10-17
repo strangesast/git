@@ -11,18 +11,22 @@ var schema = new Schema({
   },
   job: {
     type: ObjectId,
+    required: true,
     ref: 'Job'
   },
   phase: {
     type: ObjectId,
+    default: null,
     ref: 'Phase'
   },
   building: {
     type: ObjectId,
+    default: null,
     ref: 'Building'
   },
   'parent': {
     type: ObjectId,
+    default: null,
     ref: 'Component'
   },
   parts: [{
