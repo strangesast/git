@@ -51,6 +51,22 @@ var common = (function() {
         if(currentRootPhase == null && !phaseEnabled) phaseDescendants = true;
         if(currentRootBuilding == null && !buildingEnabled) buildingDescendants = true;
 
+        if (componentEnabled) {
+          phase = {'_id':currentRootPhase};
+          building = {'_id':currentRootBuilding};
+          var pdescendants;
+          var bdescendants;
+          if(phaseDescendants) pdescendants = getPhaseDescendants(phase).map((el)=>el._id);
+          if(buildingDescendants) bdescendants = getBuildingDescendants(building).map((el)=>el._id);
+
+          for(var k=0; component=components[k], k < components.length; k++) {
+            if(bool(component.phase, pdescendants || phase._id) && bool(component.building, bdescendants || building._id)) {
+              tree.push({type: 'component', _id: component._id, level: level});
+              if(!(component._id in included.components)) included.components[component._id] = component;
+            }
+          }
+        }
+
         // for determining descendants
         var phases, buildings;
         if(phaseEnabled) phases = data[0].filter((p) => bool(p.parent, currentRootPhase));
@@ -77,21 +93,6 @@ var common = (function() {
             let both = func(currentRootPhase, building._id, level+1, false, buildingEnabled, componentEnabled, phaseDescendants, buildingDescendants, emptyFolders);
             extend(both.included);
             append(both.tree);
-          }
-        }
-        if (componentEnabled) {
-          phase = {'_id':currentRootPhase};
-          building = {'_id':currentRootBuilding};
-          var pdescendants;
-          var bdescendants;
-          if(phaseDescendants) pdescendants = getPhaseDescendants(phase).map((el)=>el._id);
-          if(buildingDescendants) bdescendants = getBuildingDescendants(building).map((el)=>el._id);
-
-          for(var k=0; component=components[k], k < components.length; k++) {
-            if(bool(component.phase, pdescendants || phase._id) && bool(component.building, bdescendants || building._id)) {
-              tree.push({type: 'component', _id: component._id, level: level});
-              if(!(component._id in included.components)) included.components[component._id] = component;
-            }
           }
         }
         if((componentEnabled == null || componentEnabled) && !emptyFolders) { // hide empty folders, but only when component enabled

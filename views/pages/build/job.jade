@@ -67,6 +67,8 @@ block workspace
               span.icon.fa(rv-class='branch.type | icon_class')
               a.hoverlink.name(tabindex=-1, rv-href='model | getURL')
                 span { model:name }
+              .icon.edit
+                span.fa.fa-edit
               .icon.hoverstyle.root(rv-if='branch.type | != "component"')
                 span.fa.fa-angle-right.fa-lg
               span.description(rv-if='model:description') { model:description }

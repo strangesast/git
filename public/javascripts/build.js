@@ -382,13 +382,31 @@ var TreeElementView = BaseView.extend({
     'dragleave .mask': 'dragleave',
     'dragover .mask': 'dragover',
     'drop': 'dragdrop',
+    'click .edit': 'editname',
     'click .root': 'addRoot',
     'keydown': 'keydown'
   },
   keydown: function(e) {
+    if(e.target != this.el) return;
     if(e.which == SPACE_KEY) {
       return e.preventDefault();
     }
+  },
+  editname: function(e) {
+    var nameEl = this.el.querySelector('.name');
+    var inputEl = document.createElement('input');
+    //inputEl.classList.add('name');
+    inputEl.value = this.model.get('name');
+    nameEl.parentElement.replaceChild(inputEl, nameEl);
+    inputEl.select();
+    console.log(inputEl);
+    var self = this;
+    var func = function() {
+      self.model.set('name', inputEl.value);
+      inputEl.parentElement.replaceChild(nameEl, inputEl);
+      //document.removeEventListener('click', func, false);
+    };
+    inputEl.addEventListener('blur', func, false);
   },
   addRoot: function(e) {
     if(this.model instanceof Phase) {
@@ -545,7 +563,6 @@ var TreeElementView = BaseView.extend({
       if(!(this.model instanceof Phase)) return false; // only allow adding on similar models
       return {phase: isSibling ? this.model.get('parent') : this.model.get('_id')};
     }
-
   },
   template: function() {
     var el = document.importNode(document.getElementById('tree-element-template').content, true).firstChild;
