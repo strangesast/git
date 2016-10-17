@@ -48,22 +48,21 @@ var common = (function() {
             }
           }
         };
+        //if(buildingEnabled && phaseEnabled) {
+        //  phaseDescendants = false;
+        //  buildingDescendants = false;
 
-        if(buildingEnabled && phaseEnabled) {
-          phaseDescendants = false;
-          buildingDescendants = false;
+        //} else if(!phaseEnabled && !buildingEnabled) {
+        //  phaseDescendants = true;
+        //  buildingDescendants = true;
 
-        } else if(!phaseEnabled && !buildingEnabled) {
-          phaseDescendants = true;
-          buildingDescendants = true;
+        //} else if (phaseEnabled && !buildingEnabled) {
+        //  buildingDescendants = true;
 
-        } else if (phaseEnabled && !buildingEnabled) {
-          buildingDescendants = true;
+        //} else if(!phaseEnabled && buildingEnabled) {
+        //  phaseDescendants = true;
 
-        } else if(!phaseEnabled && buildingEnabled) {
-          phaseDescendants = true;
-
-        }
+        //}
 
         // for determining descendants
         var phases, buildings;

@@ -194,7 +194,8 @@ router.route('/:name/:id?')
   var Model = req.Model;
   var model = Model.findById(id);
   Model.findOneAndUpdate({_id:id}, req.body).then(function(result) {
-    res.json(result);
+    res.sendStatus(204);
+    //res.json(result); // not good
   }).catch(defaultReturn(next));
 })
 .delete(function(req, res, next) {

@@ -36,9 +36,9 @@ var Tree = Backbone.Model.extend({
     this.listenTo(this.job.collections.buildings, 'reset', this.recalculate);
     this.listenTo(this.job.collections.components, 'reset', this.recalculate);
 
-    this.listenTo(this.job.collections.phases, 'change sync', this.recalculate);
-    this.listenTo(this.job.collections.buildings, 'change sync', this.recalculate);
-    this.listenTo(this.job.collections.components, 'change sync', this.recalculate);
+    this.listenTo(this.job.collections.phases, 'change', this.recalculate);
+    this.listenTo(this.job.collections.buildings, 'change', this.recalculate);
+    this.listenTo(this.job.collections.components, 'change', this.recalculate);
 
 
     this.dragged = null;
@@ -279,7 +279,6 @@ var SearchResults = BaseView.extend({
   },
   events: {
     'dragstart': 'dragstart',
-    'drop': 'dragdrop',
     'dragend': 'dragend',
     'click .filter' : 'addFilter'
   },
@@ -441,6 +440,7 @@ var TreeElementView = BaseView.extend({
     }
   },
   dragdrop: function(e) {
+    this.el.parentElement.classList.remove('dragging');
     clearTimeout(this.dragtimeout);
     TreeElementView.clear();
 
@@ -664,6 +664,30 @@ var cleanup = function(ob) {
     ob.building = ob.building != null ? ob.building._id : null;
   }
 }
+
+buildings.savetimeout = null;
+buildings.on('change', function(model, options) {
+  clearTimeout(buildings.savetimeout);
+  buildings.savetimeout = setTimeout(() =>{
+    model.save();
+  }, 1000);
+});
+components.savetimeout = null;
+components.on('change', function(model, options) {
+  clearTimeout(components.savetimeout);
+  components.savetimeout = setTimeout(() =>{
+    model.save();
+  }, 1000);
+});
+phases.savetimeout = null;
+phases.on('change', function(model, options) {
+  clearTimeout(phases.savetimeout);
+  phases.savetimeout = setTimeout(() =>{
+    model.save();
+  }, 1000);
+});
+
+
 
 var init = function() {
   cleanup(PREFETCH.phases);
