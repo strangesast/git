@@ -178,9 +178,13 @@ span.icon {
           margin-right: 0px;
           display: inline-block;
           line-height: @navigation-height - 16px;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          overflow: hidden;
           span:not(:first-child) {
             padding-left: 4px;
           }
+          max-width: 120px;
         }
       }
     }
@@ -333,7 +337,14 @@ span.icon {
       width: 50%;
       height: 100%;
       top: 0;
-      opacity: 0.25;
+      opacity: 0;
+      transition: opacity 10s ease-in;
+      text-align: center;
+      line-height: @tree-element-height;
+      font-size: 2em;
+    }
+    &.hover .mask {
+      opacity: 1;
     }
     .mask.left {
       left: 0;
@@ -342,6 +353,12 @@ span.icon {
     .mask.right {
       right: 0;
       //background: green;
+    }
+    &.hover .mask.left:after {
+      content: 'sibling';
+    }
+    &.hover .mask.right:after {
+      content: 'child';
     }
   }
   &.dragging > .tree-element > .mask {

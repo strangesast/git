@@ -68,10 +68,6 @@ rivets.formatters.len = function(value) {
   return value.length;
 }
 
-rivets.formatters.offsetlen = function(value) {
-  return 'padding-left: ' + (value.length ? value.map((v)=>v.name.length).reduce((a,b)=>a+b)*10+18+(value.length-1)*22 : 0) + 'px;';
-};
-
 rivets.formatters.getURL = function(value) {
   return (value && value.getURL != null) ?  value.getURL() : null;
 };

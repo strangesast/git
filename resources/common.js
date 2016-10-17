@@ -51,6 +51,13 @@ var common = (function() {
         if(currentRootPhase == null && !phaseEnabled) phaseDescendants = true;
         if(currentRootBuilding == null && !buildingEnabled) buildingDescendants = true;
 
+        // for determining descendants
+        var phases, buildings;
+        if(phaseEnabled) phases = data[0].filter((p) => bool(p.parent, currentRootPhase));
+        if(buildingEnabled) buildings = data[1].filter((b) => bool(b.parent, currentRootBuilding));
+
+
+        var phase, building, component;
         if (componentEnabled) {
           phase = {'_id':currentRootPhase};
           building = {'_id':currentRootBuilding};
@@ -67,22 +74,6 @@ var common = (function() {
           }
         }
 
-        // for determining descendants
-        var phases, buildings;
-        if(phaseEnabled) phases = data[0].filter((p) => bool(p.parent, currentRootPhase));
-        if(buildingEnabled) buildings = data[1].filter((b) => bool(b.parent, currentRootBuilding));
-
-        var phase, building, component;
-        if(phaseEnabled) {
-          for(var i=0; phase=phases[i], i < phases.length; i++) {
-            tree.push({type: 'phase', _id: phase._id, level: level});
-            if(!(phase._id in included.phases)) included.phases[phase._id] = phase;
-
-            let both = func(phase._id, currentRootBuilding, level+1, phaseEnabled, buildingEnabled, componentEnabled, phaseDescendants, buildingDescendants, emptyFolders);
-            extend(both.included);
-            append(both.tree);
-          }
-        }
         //                     otherwise building is repeated after phase on first level
         if (buildingEnabled && (currentRootPhase != null || level != 0 || !phaseEnabled)) {
           phase = {'_id':currentRootPhase};
@@ -91,6 +82,17 @@ var common = (function() {
             if(!(building._id in included.buildings)) included.buildings[building._id] = building;
 
             let both = func(currentRootPhase, building._id, level+1, false, buildingEnabled, componentEnabled, phaseDescendants, buildingDescendants, emptyFolders);
+            extend(both.included);
+            append(both.tree);
+          }
+        }
+
+        if(phaseEnabled) {
+          for(var i=0; phase=phases[i], i < phases.length; i++) {
+            tree.push({type: 'phase', _id: phase._id, level: level});
+            if(!(phase._id in included.phases)) included.phases[phase._id] = phase;
+
+            let both = func(phase._id, currentRootBuilding, level+1, phaseEnabled, buildingEnabled, componentEnabled, phaseDescendants, buildingDescendants, emptyFolders);
             extend(both.included);
             append(both.tree);
           }

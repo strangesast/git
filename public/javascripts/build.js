@@ -142,6 +142,17 @@ var Navbar = BaseView.extend({
     }
     this.bindTo = {search: this.search, tree: this.tree, view: this};
     this.listenTo(this.search, 'change:query', () => this.binding ? this.binding.sync() : null); // hacked
+    this.listenTo(this.search, 'change:filters', this.updateoffset);
+  },
+  updateoffset: function(e) {
+    console.log('update');
+    var inputEl = this.el.querySelector('input');
+    var searchFiltersEl = this.el.querySelector('.search-filters');
+    if(this.search.get('filters').length) {
+      inputEl.style['padding-left'] = searchFiltersEl.offsetWidth + 'px';
+    } else {
+      inputEl.style['padding-left'] = '';
+    }
   }
 });
 
@@ -180,6 +191,7 @@ var Search = Backbone.Model.extend({
   input: function() {
     var query = this.get('query');
     var filters = this.get('filters');
+    var filtersChanged = false;
     //var results = this.get('results');
     var results;
     var filterKinds = [];
@@ -199,6 +211,7 @@ var Search = Backbone.Model.extend({
           case 'component':
             col = col || this.collections.components;
             if(model = col.get(query)) {
+              filtersChanged = true;
               filters.splice(i, 1);
               filters.push({
                 kind: 'property',
@@ -239,6 +252,7 @@ var Search = Backbone.Model.extend({
         if(query.startsWith(prefix + ':')) {
           query = query.slice(prefix.length+1);
           if(filters.filter((f)=>f.kind=='type'&&f.type==prefix).length == 0) {
+            filtersChanged = true;
             filters.push({
               kind: 'type',
               type: prefix,
@@ -257,8 +271,10 @@ var Search = Backbone.Model.extend({
       filters: _.clone(filters),
       query: query
     });
-    this.trigger('change', this);
-    this.trigger('change:filters', this);
+    //this.trigger('change', this);
+    if(filtersChanged) {
+      this.trigger('change:filters', this);
+    }
   },
   getFilters: function() {
     return this.get('filters');
@@ -342,7 +358,23 @@ var TreeView = BaseView.extend({
     this.model.build();
   },
   events: {
-    'click .remove': 'removeRoot'
+    'click .remove': 'removeRoot',
+    'dragenter': 'dragenter',
+    'dragover':'dragover',
+    'drop':'dragdrop'
+  },
+  dragenter: function(e) {
+    e.preventDefault();
+  },
+  dragover: function(e) {
+    e.preventDefault();
+  },
+  dragdrop: function(e) {
+    if(this.model.dragged == null) return;
+    var model = this.model.dragged;
+    var collection = this.model.job.collections[model.type + 's'];
+
+    model = collection.create(model.attributes);
   },
   removeRoot: function(e) {
     var name = e.currentTarget.getAttribute('name');
@@ -381,7 +413,7 @@ var TreeElementView = BaseView.extend({
     'dragenter .mask': 'dragenter',
     'dragleave .mask': 'dragleave',
     'dragover .mask': 'dragover',
-    'drop': 'dragdrop',
+    'drop .mask': 'dragdrop',
     'click .edit': 'editname',
     'click .root': 'addRoot',
     'keydown': 'keydown'
@@ -458,13 +490,15 @@ var TreeElementView = BaseView.extend({
     }
   },
   dragdrop: function(e) {
-    this.el.parentElement.classList.remove('dragging');
     clearTimeout(this.dragtimeout);
+    this.el.parentElement.classList.remove('dragging');
     TreeElementView.clear();
 
     var model = this.tree.dragged;
+    var sibling = e.currentTarget.getAttribute('name') === 'left';
+    console.log(e.currentTarget);
     if(model == null) return console.log('nothing "dragged"');
-    var placement = this.validPlacement(model);
+    var placement = this.validPlacement(model, sibling);
 
     var job = this.tree.job;
 
@@ -523,6 +557,7 @@ var TreeElementView = BaseView.extend({
     }
   },
   validPlacement: function(model, isSibling) {
+    if(isSibling == null) throw new Error('need to specify sibling');
     // sibling or child
     if(this.model == model) return false;
     if(model instanceof Component) {
@@ -557,6 +592,19 @@ var TreeElementView = BaseView.extend({
       }
     } else if (model instanceof Building) { // only allow adding on similar models
       if(!(this.model instanceof Building)) return false;
+      var parents = [];
+      var cur = this.model;
+
+      if(!isSibling) {
+        parents.push(cur.get('_id'));
+      }
+      while(cur != null) {
+        cur = this.model.collection.get(cur.get('parent'));
+        if(cur != null) parents.push(cur.get('_id'));
+      }
+      if(parents.indexOf(model.get('_id')) !== -1) return false;
+      // here
+      console.log(isSibling);
       return {building: isSibling ? this.model.get('parent') : this.model.get('_id')};
 
     } else if (model instanceof Phase) {

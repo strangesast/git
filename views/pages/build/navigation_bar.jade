@@ -36,12 +36,12 @@
   template
     .container#navigation-bar
       .search
-        .search-filters(rv-if='search:filters | len')
-          .search-filter(rv-each-filter='search:filters', name='filter.name')
+        .search-filters
+          .search-filter(rv-each-filter='search:filters', name='filter.name', rv-title='filter.name')
             span.fa.fa-times.remove
             span { filter.name }
 
-        input(list='suggestions', autocomplete='off', type='text', name='query', placeholder='search', rv-value='search:query', rv-style='search:filters | offsetlen')
+        input(list='suggestions', autocomplete='off', type='text', name='query', placeholder='search', rv-value='search:query')
         datalist#suggestions
           option(rv-each-suggestion='search:suggestedFilters', rv-value='suggestion')
 
