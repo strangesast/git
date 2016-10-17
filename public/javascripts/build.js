@@ -399,6 +399,7 @@ var TreeElementView = BaseView.extend({
     }
   },
   undragstyle: function(e) {
+    (this.el.parentElement && this.el.parentElement.querySelector('.fake')) ? this.el.parentElement.querySelector('.fake').classList.add('hidden') : null;
     this.el.classList.remove('hover');
     this.dragtimeout = null;
   },
@@ -421,6 +422,7 @@ var TreeElementView = BaseView.extend({
       if(el.parentElement == null) {
         this.el.parentElement.appendChild(el);
       }
+      el.classList.remove('hidden');
       var str = 'translateY(' + String(Number(this.el.offsetTop)+60) + 'px )';
       el.style.transform = str;
     }
@@ -494,6 +496,7 @@ var TreeElementView = BaseView.extend({
     var placement;
     var sibling = e.currentTarget.getAttribute('name') === 'left';
     if(this.tree.dragged != null && (placement = this.validPlacement(this.tree.dragged, sibling))) {
+      this.el.parentElement.querySelector('.fake') ? this.el.parentElement.querySelector('.fake').classList.remove('hidden') : null;
       if(this.dragtimeout != null) {
         clearTimeout(this.dragtimeout);
         this.dragtimeout = setTimeout(this.undragstyle.bind(this), 1000);
@@ -527,7 +530,11 @@ var TreeElementView = BaseView.extend({
           }
           branch = this.tree.tree[i-1];
         } while (i > -1 && branch);
-        if(!(phaseBranch == null && buildingBranch == null) && (phaseBranch == null || phaseBranch._id == model.get('phase')) && (buildingBranch == null || buildingBranch._id == model.get('building'))) return false;
+        if(
+          !(phaseBranch == null && buildingBranch == null) &&
+          (phaseBranch == null || phaseBranch._id == model.get('phase')) &&
+          (buildingBranch == null || buildingBranch._id == model.get('building'))
+        ) return false;
         return {phase: phaseBranch ? phaseBranch._id : this.tree.get('rootPhase'), building: buildingBranch ? buildingBranch._id : this.tree.get('rootBuilding')};
       }
     }
