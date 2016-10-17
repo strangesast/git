@@ -403,7 +403,7 @@ var TreeElementView = BaseView.extend({
     this.dragtimeout = null;
   },
   dragstart: function(e) {
-    //if(e.target != this.el) return;
+    if(e.target != this.el) return;
     this.tree.dragged = this.model;
     this.el.classList.add('dragged');
     this.el.parentElement.classList.add('dragging');
@@ -433,7 +433,7 @@ var TreeElementView = BaseView.extend({
     var sibling = e.currentTarget.getAttribute('name') === 'left';
     clearTimeout(this.dragtimeout);
     if(this.tree.dragged != null && (placement = this.validPlacement(this.tree.dragged, sibling))) {
-      var el = TreeElementView.fake({branch: {level: this.branch.level + (sibling ? 0 : 1), type: 'component'}, model: this.tree.dragged});
+      var el = TreeElementView.fake({branch: {level: this.branch.level + (sibling ? 0 : 1), type: this.tree.dragged.type}, model: this.tree.dragged});
       this.dragstyle(e, el);
       this.dragtimeout = setTimeout(this.undragstyle.bind(this), 1000);
       e.preventDefault();
@@ -537,7 +537,15 @@ var TreeElementView = BaseView.extend({
         ) return false;
         return {phase: phaseBranch ? phaseBranch._id : this.tree.get('rootPhase'), building: buildingBranch ? buildingBranch._id : this.tree.get('rootBuilding')};
       }
+    } else if (model instanceof Building) { // only allow adding on similar models
+      if(!(this.model instanceof Building)) return false;
+      return {building: isSibling ? this.model.get('parent') : this.model.get('_id')};
+
+    } else if (model instanceof Phase) {
+      if(!(this.model instanceof Phase)) return false; // only allow adding on similar models
+      return {phase: isSibling ? this.model.get('parent') : this.model.get('_id')};
     }
+
   },
   template: function() {
     var el = document.importNode(document.getElementById('tree-element-template').content, true).firstChild;
