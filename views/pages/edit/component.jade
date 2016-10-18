@@ -31,9 +31,12 @@ block workspace
         else
           tr
             td No parts
+            td No parts
+            td No parts
+            td No parts
+            td No parts
 
-      pre=doc
-
+      pre=doc 
       template
         .full#element
           h1 Edit { model:name }
@@ -49,25 +52,36 @@ block workspace
           button.save Save
   
           h3 Parts
-          table
-            tr
-              th Core Part
-              th Name
-              th Description
-              th Qty
-              th Price
-  
-            if doc.parts.length
-              each part in doc.parts
-                tr
-                  td=((part.part in parts) ? parts[part.part].description : part.part)
-                  td=part.name
-                  td=part.description
-                  td=part.qty
-                  td=part.price
-            else
+          table#part-table
+            thead
               tr
-                td No parts
+                th Core Part
+                th Name
+                th Description
+                th Qty
+                th Price
+  
+            tbody
+              if doc.parts.length
+                each part in doc.parts
+                  tr
+                    td=((part.part in parts) ? parts[part.part].description : part.part)
+                    td=part.name
+                    td=part.description
+                    td=part.qty
+                    td=part.price
+              else
+                tr
+                  td No parts
+                  td No parts
+                  td No parts
+                  td No parts
+                  td No parts
+
+          label(for='new-part-name')
+          br
+          input#new-part-name(name='name', type='text', value='new part')
+          button.add Add Part
 
 
 block scripts
@@ -75,6 +89,7 @@ block scripts
   - var newline_escape = (str) => str.replace(/\\r\\n/g, '\\\r\\\n').replace(/\\r/g, "\\r").replace(/\\t/g, "\\t").replace(/\\b/g, "\\b").replace(/\\f/g, "\\f").replace(/'/g,"\\'").replace(/"/g,'\\"');
   script.
     var PREFETCH = {};
+    PREFETCH.jobs = JSON.parse('!{newline_escape(JSON.stringify(jobs))}');
     PREFETCH.parts = JSON.parse('!{newline_escape(JSON.stringify(parts))}');
     PREFETCH.phases = JSON.parse('!{newline_escape(JSON.stringify(phases))}');
     PREFETCH.buildings = JSON.parse('!{newline_escape(JSON.stringify(buildings))}');

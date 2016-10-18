@@ -129,8 +129,6 @@ var SearchResults = BaseView.extend({
   }
 });
 
-
-
 var View = Backbone.View.extend({
   el: '#element',
   events: {
@@ -151,7 +149,14 @@ var View = Backbone.View.extend({
   }
 });
 
-//var jobs = new Jobs();
+var PartTable = Backbone.View.extend({
+  el: '#part-table',
+  render: function() {
+    this.binding = rivets.bind(this.el, {model: this.model});
+  }
+});
+
+var jobs = new Jobs();
 var collections = {};
 var phases = new Phases();
 var buildings = new Buildings();
@@ -164,15 +169,18 @@ if(typeof PREFETCH !== 'undefined') {
   buildings.reset(PREFETCH.buildings);
   components.reset(PREFETCH.components);
   parts.reset(PREFETCH.parts);
+  jobs.reset(PREFETCH.jobs);
 
   collections.phases = phases;
   collections.buildings = buildings;
   collections.components = components;
   collections.parts = parts;
+  collections.jobs = jobs;
 
 
   if(PREFETCH.component) {
     var component = components.get(PREFETCH.component['_id']);
+    component.parts = new Parts();
     var view = new View({model: component});
     view.render();
 

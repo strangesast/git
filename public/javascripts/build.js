@@ -354,9 +354,11 @@ var TreeElementView = BaseView.extend({
   },
   dragenter: function(e) {
     //if(e.target != this.el) return;
+    console.log('enter');
     var placement;
     var sibling = e.currentTarget.getAttribute('name') === 'left';
     clearTimeout(this.dragtimeout);
+    console.log(placement);
     if(this.tree.dragged != null && (placement = this.validPlacement(this.tree.dragged, sibling))) {
       var el = TreeElementView.fake({branch: {level: this.branch.level + (sibling ? 0 : 1), type: this.tree.dragged.type}, model: this.tree.dragged});
       this.dragstyle(e, el);
@@ -368,6 +370,7 @@ var TreeElementView = BaseView.extend({
     clearTimeout(this.dragtimeout);
     this.el.parentElement.classList.remove('dragging');
     TreeElementView.clear();
+    console.log('drop');
 
     var model = this.tree.dragged;
     var sibling = e.currentTarget.getAttribute('name') === 'left';

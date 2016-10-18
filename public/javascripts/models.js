@@ -15,6 +15,13 @@ var Building = Element.extend({
 });
 var Component = Element.extend({
   type: 'component',
+  initialize: function() {
+    this.on('change:parts', this.updateParts);
+  },
+  updateParts: function() {
+    if(!this.parts) return;
+    console.log(updateParts);
+  },
   getURL: function() {
     return '/app/edit/component/' + this.get(this.idAttribute);
   },
@@ -175,6 +182,8 @@ var nameToModel = function(name) {
       return Building;
     case 'component':
       return Component;
+    case 'part':
+      return Part;
     default:
       throw new Error('invalid name "'+name+'"');
   }

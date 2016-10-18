@@ -70,16 +70,6 @@ router.get('/edit/:name/:id', function(req, res, next) {
   }
   var partPromise = iface.sqlQuery('SELECT * FROM core_development.part_catalogs where purchaseable=1 && active=1 limit 1000').then(function(arr) {
     return arr;
-    //var obj = {};
-    //var subobj;
-    //for(var i=0; i < arr.length; i++) {
-    //  subobj = {};
-    //  for(var prop in arr[i]) {
-    //    subobj[prop] = arr[i][prop];
-    //  }
-    //  obj[subobj.version_id] = subobj;
-    //}
-    //return obj;
   });
 
   var requiredObjects = function(name, doc) {
@@ -100,7 +90,7 @@ router.get('/edit/:name/:id', function(req, res, next) {
 
   var allObjects = function() {
     var q = {};
-    return Promise.all(['phase', 'building', 'component'].map(function(name) {
+    return Promise.all(['job', 'phase', 'building', 'component'].map(function(name) {
       var cap = name[0].toUpperCase() + name.slice(1);
       return iface[cap].find(q).then(function(result) {
         return [name + 's', result];
