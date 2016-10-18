@@ -85,7 +85,6 @@ block template
 block scripts
   script(src='/components/backbone/backbone-min.js')
   - var newline_escape = (str) => str.replace(/\\r\\n/g, '\\\r\\\n').replace(/\\r/g, "\\r").replace(/\\t/g, "\\t").replace(/\\b/g, "\\b").replace(/\\f/g, "\\f");
-  };
   - console.log(newline_escape(JSON.stringify(job)))
   script.
     var PREFETCH = {};

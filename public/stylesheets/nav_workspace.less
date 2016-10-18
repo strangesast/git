@@ -129,6 +129,11 @@ span.icon {
     .picture + .information {
       padding-left: @gutter-size;
     }
+    @media(max-width: @sml) {
+      .picture {
+        display: none;
+      }
+    }
     .information {
       flex-grow: 1;
       //background: orange;
@@ -396,11 +401,16 @@ span.icon {
   display: flex;
   //background: turquoise;
   align-items: center;
-  span:not(.icon):not(.spacer) {
+
+  a, span:not(.icon):not(.spacer) {
     margin: 0 10px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .name {
+    min-width: 80px;
   }
 
   .edit {
@@ -410,7 +420,7 @@ span.icon {
     .hoverlink;
     display: none;
   }
-  .name:hover + .edit, .edit:hover {
+  &:hover .edit {
     display: block;
   }
 }
