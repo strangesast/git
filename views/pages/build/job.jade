@@ -70,7 +70,7 @@ block workspace
             .tree-element(rv-level='branch.level', draggable='true', tabindex=1)
               span.icon.fa(rv-class='branch.type | icon_class')
               a.hoverlink.name(tabindex=-1, rv-href='model | getURL')
-                span { model:name }
+                | { model:name }
               .icon.edit
                 span.fa.fa-edit
               .icon.hoverstyle.root(rv-if='branch.type | != "component"')

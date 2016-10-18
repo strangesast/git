@@ -109,16 +109,14 @@ span.icon {
         width: ~"calc(100% - 12px);";
         margin: 8px 0;
       }
-      &.offset input {
-        padding-left: 54px;
-      }
       .search-filters {
         position: absolute;
         top: 0;
         left: 0;
         margin-left: 0px;
         height: @navigation-height;
-        .search-filter {
+
+        & > .search-filter {
           border-radius: 5px;
           border: 2px solid black;
           font-size: 1.2em;
@@ -134,6 +132,9 @@ span.icon {
             padding-left: 4px;
           }
           max-width: 120px;
+          .remove {
+            .hoverstyle;
+          }
         }
       }
     }

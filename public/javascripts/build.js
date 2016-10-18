@@ -107,7 +107,7 @@ var Navbar = BaseView.extend({
     'input .search input' : 'input',
     'keydown .search input' : 'keydown',
     'blur .search input' : 'blur',
-    'cilck .remove': 'removeFilter'
+    'click .remove': 'removeFilter'
   },
   keydown: function(e) {
     if(e.which == ESC_KEY) {
@@ -135,7 +135,20 @@ var Navbar = BaseView.extend({
     }
   },
   removeFilter: function(e) {
-    console.log(e);
+    var name = e.currentTarget.parentElement.getAttribute('name');
+    if(name == null) return;
+    var filtersChanged = false;
+    var filters = this.search.get('filters');
+    for(var i=0,filter; filter=filters[i], i < filters.length; i++) {
+      if(filter.name == name) {
+        filtersChanged = true;
+        filters.splice(i, 1);
+        break;
+      }
+    }
+    if(!filtersChanged) throw new Error('goofy');
+    this.search.set('filters', filters);
+    this.search.trigger('change:filters', this.search);
   },
   initialize: function(params, options) {
     for(var prop in params) {
