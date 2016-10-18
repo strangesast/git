@@ -115,6 +115,7 @@ var Navbar = BaseView.extend({
     } else if (e.which == BACKSPACE_KEY) {
       if(this.search.get('query') == '' && this.search.get('filters').length) {
         this.search.set('filters', this.search.get('filters').slice(0, -1));
+        this.search.trigger('change:filters', this.search);
       }
     }
   },
@@ -609,6 +610,18 @@ var TreeElementView = BaseView.extend({
 
     } else if (model instanceof Phase) {
       if(!(this.model instanceof Phase)) return false; // only allow adding on similar models
+      var parents = [];
+      var cur = this.model;
+
+      if(!isSibling) {
+        parents.push(cur.get('_id'));
+      }
+      while(cur != null) {
+        cur = this.model.collection.get(cur.get('parent'));
+        if(cur != null) parents.push(cur.get('_id'));
+      }
+      if(parents.indexOf(model.get('_id')) !== -1) return false;
+
       return {phase: isSibling ? this.model.get('parent') : this.model.get('_id')};
     }
   },

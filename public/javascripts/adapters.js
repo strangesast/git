@@ -54,11 +54,11 @@ rivets.formatters['icon_class'] = {
   read: function(value) {
     switch (value) {
       case 'phase':
-        return 'fa fa-bookmark-o';
+        return 'icon fa fa-bookmark-o';
       case 'building':
-        return 'fa fa-building-o';
+        return 'icon fa fa-building-o';
       case 'component':
-        return 'fa fa-cubes';
+        return 'icon fa fa-cubes';
     }
     return value;
   }

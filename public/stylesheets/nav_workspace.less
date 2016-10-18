@@ -263,13 +263,20 @@ span.icon {
 }
 
 .search-box {
-  width: @search-width;
+  min-width: @search-width;
   //background: teal;
   padding: 0 10px;
   margin: 0 -10px;
   .search-result {
     padding: 0 10px;
     margin: 0 -10px;
+
+    div {
+      max-width: 300px;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
 
     padding: 10px;
     min-height: @navigation-height;
@@ -282,6 +289,7 @@ span.icon {
 
 .tree {
   flex-grow: 1;
+  min-width: 0;
   position: relative;
 
   .tree-filters {
@@ -290,8 +298,8 @@ span.icon {
     flex-wrap: wrap;
     & > div {
       height: @navigation-height;
-      flex-basis: 220px;
-      span {
+      line-height: @navigation-height;
+      & > span {
         margin: 6px;
       }
       .remove {
@@ -345,6 +353,7 @@ span.icon {
     }
     &.hover .mask {
       opacity: 1;
+      border: 2px dashed black;
     }
     .mask.left {
       left: 0;
@@ -387,11 +396,17 @@ span.icon {
   display: flex;
   //background: turquoise;
   align-items: center;
-  span {
+  span:not(.icon):not(.spacer) {
     margin: 0 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .edit {
+    span {
+      margin: 0;
+    }
     .hoverlink;
     display: none;
   }
