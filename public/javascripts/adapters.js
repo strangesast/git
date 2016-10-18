@@ -59,6 +59,10 @@ rivets.formatters['icon_class'] = {
         return 'icon fa fa-building-o';
       case 'component':
         return 'icon fa fa-cubes';
+      case 'job':
+        return 'icon fa fa-wrench';
+      case 'part':
+        return 'icon fa fa-cube';
     }
     return value;
   }
@@ -75,6 +79,16 @@ rivets.formatters.getURL = function(value) {
 rivets.formatters.isPart = function(value) {
   return ['component', 'part'].indexOf(value) !== -1 ? 'true' : false;
 };
+
+rivets.formatters.isNotPart = function(value) {
+  return !rivets.formatters.isPart.call(this, value);
+};
+
+
+rivets.formatters.or = function(value, arg) {
+  if(value != 'Part') return value;
+  return arg;
+}
 
 rivets.formatters['notnull'] = function(value, arg) {
   return value != null;

@@ -1,3 +1,11 @@
+const SPACE_KEY = 32;
+const DOWNARROW_KEY = 40;
+const UPARROW_KEY = 38;
+const ENTER_KEY = 13;
+const ESC_KEY = 27;
+const BACKSPACE_KEY = 8;
+
+
 var common = (function() {
   var ObjectId;
   if(typeof require !== 'undefined') {

@@ -1,0 +1,49 @@
+extends ../nav_workspace
+
+append head
+  link(rel='stylesheet', href='/stylesheets/edit.css')
+
+block title
+  | Edit
+
+block navigation
+  .container#navigation-bar
+    .search
+      input(type='text', name='query', placeholder='search')
+    .controls
+      .left
+        input.toggle#select-job-1(type='radio', name='select')
+        label.icon(for='select-job-1')
+          span.icon.fa.fa-wrench
+          span Job 1
+        input.toggle#select-job-2(type='radio', name='select')
+        label.icon(for='select-job-2')
+          span.icon.fa.fa-wrench
+          span Job 2
+        input.toggle#select-job-3(type='radio', name='select')
+        label.icon(for='select-job-3')
+          span.icon.fa.fa-wrench
+          span Job 3
+        input.toggle#select-new(type='radio', name='select')
+        label.icon(for='select-new')
+          span.icon.fa.fa-plus
+
+    // tree model view
+    template
+      .container#navigation-bar
+        .search
+          .search-filters
+            .search-filter(rv-each-filter='search:filters', name='filter.name', rv-title='filter.name')
+              span.fa.fa-times.remove
+              span { filter.name }
+  
+          input(list='suggestions', autocomplete='off', type='text', name='query', placeholder='search', rv-value='search:query')
+          datalist#suggestions
+            option(rv-each-suggestion='search:suggestedFilters', rv-value='suggestion')
+  
+        .controls
+          .left
+            input.toggle(rv-id='page._id', type='radio', name='select')
+            label.icon(for='page._id')
+              span.icon.fa.fa-wrench
+              span Job 1

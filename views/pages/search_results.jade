@@ -1,27 +1,28 @@
 .search-box#search-results
-  each result in queryResult
-    .search-result
-      .description #{result.description}
-      //.price List Price: #{result.list_price}
-      //.price NYS Price: #{result.nysprice}
-      form(name='add-component', method='post', action='/api/jobs/#{job._id}/components')
-        input(type='hidden', name='part', value=result.version_id)
-        label Name
-        input(type='text', name='name', value=result.description)
-        br
-        label Phase
-        select(name='phase', type='text')
-          each phase in phases
-            option(value=phase._id)=phase.name
-        br
-        label Building
-        select(name='building', type='text')
-          each building in buildings
-            option(value=building._id)=building.name
-        br
-        button(type='submit') Add
+  if queryResult
+    each result in queryResult
+      .search-result
+        .description #{result.description}
+        //.price List Price: #{result.list_price}
+        //.price NYS Price: #{result.nysprice}
+        form(name='add-component', method='post', action='/api/jobs/#{job._id}/components')
+          input(type='hidden', name='part', value=result.version_id)
+          label Name
+          input(type='text', name='name', value=result.description)
+          br
+          label Phase
+          select(name='phase', type='text')
+            each phase in phases
+              option(value=phase._id)=phase.name
+          br
+          label Building
+          select(name='building', type='text')
+            each building in buildings
+              option(value=building._id)=building.name
+          br
+          button(type='submit') Add
 
-  if options.phaseEnabled == null || options.phaseEnabled
+  if options && (options.phaseEnabled == null || options.phaseEnabled)
     .search-result
       h3 New Phase
       form(name='new-phase', method='post', action='/api/jobs/#{job._id}/phases')
@@ -42,7 +43,7 @@
         br
         button(type='submit') Submit
   
-  if options.buildingEnabled == null || options.buildingEnabled
+  if options && (options.buildingEnabled == null || options.buildingEnabled)
     .search-result
       h3 New Building
       form(name='new-building', method='post', action='/api/jobs/#{job._id}/buildings')
@@ -63,7 +64,7 @@
         br
         button(type='submit') Submit
   
-  if options.componentEnabled == null || options.componentEnabled
+  if options && (options.componentEnabled == null || options.componentEnabled)
     .search-result
       h3 New Component
       form(name='new-component', method='post', action='/api/jobs/#{job._id}/components')
@@ -101,13 +102,13 @@
 
   template
     .search-box#search-results
-      .search-result(rv-each-result='search:results', rv-data-type='result.type', rv-data-id='result:_id', rv-draggable='result.type | isPart', tabindex=2)
-        div { result:name }
-        div { result.type }
-        div.filter(rv-if='result.type | != "component"') Add filter
-      .search-result(draggable='true', tabindex=2, data-type='phase')
+      .search-result(rv-each-result='model:results', rv-data-type='result.type', rv-data-id='result:_id', rv-draggable='result.type | isPart', tabindex=2)
+        span(rv-class='result.type | icon_class')
+        | { result:name | or result:description }
+        div.filter(rv-if='result.type | isNotPart') Add filter
+      .search-result(rv-if='view.treeView', draggable='true', tabindex=2, data-type='phase')
         h3 New Phase
-      .search-result(draggable='true', tabindex=2, data-type='building')
+      .search-result(rv-if='view.treeView', draggable='true', tabindex=2, data-type='building')
         h3 New Building
-      .search-result(draggable='true', tabindex=2, data-type='component')
+      .search-result(rv-if='view.treeView', draggable='true', tabindex=2, data-type='component')
         h3 New Component

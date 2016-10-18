@@ -1,10 +1,11 @@
-extends ../nav_workspace
-
-block navigation
+extends edit_template
 
 block workspace
   .container
-    .full
+    .search-box
+      include ../search_results
+
+    .full#element
       h1 Edit Component
       form
         label Name
@@ -31,18 +32,54 @@ block workspace
           tr
             td No parts
 
-      form(action='/api/components/#{doc._id}/parts', method='post')
-        h3 Add Part
-        label Part List
-          input(name='part', list='part-catalog-list')
-        button(type='submit') Submit
-
-      datalist#part-catalog-list
-        -for(var part in parts)
-          option(value=part)=parts[part].description
-
-
-
-
-
       pre=doc
+
+      template
+        .full#element
+          h1 Edit { model:name }
+          br
+          label Name
+          br
+          input(rv-value='model:name', type='text')
+          br
+          label Description
+          br
+          textarea(rv-value='model:description') { model:description }
+          br
+          button.save Save
+  
+          h3 Parts
+          table
+            tr
+              th Core Part
+              th Name
+              th Description
+              th Qty
+              th Price
+  
+            if doc.parts.length
+              each part in doc.parts
+                tr
+                  td=((part.part in parts) ? parts[part.part].description : part.part)
+                  td=part.name
+                  td=part.description
+                  td=part.qty
+                  td=part.price
+            else
+              tr
+                td No parts
+
+
+block scripts
+  script(src='/components/backbone/backbone-min.js')
+  - var newline_escape = (str) => str.replace(/\\r\\n/g, '\\\r\\\n').replace(/\\r/g, "\\r").replace(/\\t/g, "\\t").replace(/\\b/g, "\\b").replace(/\\f/g, "\\f").replace(/'/g,"\\'").replace(/"/g,'\\"');
+  script.
+    var PREFETCH = {};
+    PREFETCH.parts = JSON.parse('!{newline_escape(JSON.stringify(parts))}');
+    PREFETCH.phases = JSON.parse('!{newline_escape(JSON.stringify(phases))}');
+    PREFETCH.buildings = JSON.parse('!{newline_escape(JSON.stringify(buildings))}');
+    PREFETCH.components = JSON.parse('!{newline_escape(JSON.stringify(components))}');
+    PREFETCH.component = JSON.parse('!{newline_escape(JSON.stringify(doc))}');
+
+  script(src='/javascripts/models.js')
+  script(src='/javascripts/edit.js')

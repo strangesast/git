@@ -3,6 +3,8 @@ extends ../nav_workspace
 append head
   link(rel='stylesheet', href='/stylesheets/build.css')
   
+block title
+  | Build
 
 block top
   include description
@@ -12,7 +14,7 @@ block navigation
 
 block workspace
   .container#workspace
-    include search_results
+    include ../search_results
 
     .tree#tree
       .tree-filters
@@ -98,4 +100,5 @@ block scripts
     PREFETCH.buildings = JSON.parse('!{newline_escape(JSON.stringify(buildings))}');
     PREFETCH.components = JSON.parse('!{newline_escape(JSON.stringify(components))}');
 
+  script(src='/javascripts/models.js')
   script(src='/javascripts/build.js')

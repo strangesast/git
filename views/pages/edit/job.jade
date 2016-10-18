@@ -1,71 +1,11 @@
-extends ../nav_workspace
-
-block navigation
-  .container#navigation-bar
-    - var classes = ['fa-bookmark-o', 'fa-building-o', 'fa-cubes']
-    - var kinds = ['phase', 'building', 'component']
-    - var uppercase = (str) => str[0].toUpperCase() + str.slice(1)
-    .search
-      form(action='', method='get')
-        input(type='text', name='query', placeholder='search')
-    .controls
-      .left
-      .right
-        .dropdown
-          a.icon(href='#')
-            span.fa.fa-filter.fa-lg
-            span Filters
-          .dropdown-body
-            a(href='#')
-              span Phase Descendants
-            a(href='#')
-              span Building Descendants
-            a(href='#')
-              span Empty Folders
-  
-    // tree model view
-    template
-      .container#navigation-bar
-        .search
-          .search-filters
-            .search-filter(rv-each-filter='search:filters', name='filter.name', rv-title='filter.name')
-              span.fa.fa-times.remove
-              span { filter.name }
-  
-          input(list='suggestions', autocomplete='off', type='text', name='query', placeholder='search', rv-value='search:query')
-          datalist#suggestions
-            option(rv-each-suggestion='search:suggestedFilters', rv-value='suggestion')
-  
-        .controls
-          .left
-            each kind, i in kinds
-              - var _class = classes[i];
-              input.toggle.type(name='kind-enabled', id='#{kind}-enabled', type='checkbox', rv-checked='tree:#{kind}Enabled')
-              label.icon.link(for='#{kind}-enabled', title='toggle #{kind} visibility in tree')
-                span(class=_class).fa.fa-lg
-                span=uppercase(kind)
-          .right
-            .dropdown
-              .icon(href='#')
-                span.fa.fa-filter.fa-lg
-                span Filters
-              .dropdown-body
-                input(id='phase-descendants-enabled', type='checkbox', rv-checked='tree:phaseDescendants').toggle
-                label(for='phase-descendants-enabled').icon.link
-                  span Phase Descendants
-                input(id='building-descendants-enabled', type='checkbox', rv-checked='tree:buildingDescendants').toggle
-                label(for='building-descendants-enabled').icon.link
-                  span Building Descendants
-                input(id='empty-folders-enabled', type='checkbox', rv-checked='tree:emptyFolders').toggle
-                label(for='empty-folders-enabled').icon.link
-                  span Empty Folders
+extends edit_template
 
 block workspace
   .container
     .search-box#search-results
-    .full
-      h1 Edit Job
-      pre=doc
+      include ../search_results
+
+    .full#element
 
       form(name='job', method='post', action='/api/jobs/#{doc._id}')
         input(type='hidden', name='_id', value=doc._id)

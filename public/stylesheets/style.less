@@ -79,15 +79,17 @@ body {
 
 .dropdown {
   position: relative;
-  //background: red;
+  height: @navigation-height;
   & > *:first-child {
     float: right;
   }
+  a {
+    color: inherit;
+    text-decoration: none;
+    height: @navigation-height;
+    line-height: @navigation-height;
+  }
   .dropdown-body {
-    a {
-      color: inherit;
-      text-decoration: none;
-    }
     z-index: 20;
     position: absolute;
     min-width: 100px;
@@ -101,6 +103,7 @@ body {
       height: @navigation-height;
       width: 100%;
       text-align: right;
+      background: inherit;
       & > * {
         padding: 8px;
         line-height: @navigation-height;

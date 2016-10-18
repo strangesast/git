@@ -68,17 +68,18 @@ router.get('/edit/:name/:id', function(req, res, next) {
     case 'Phase':
       strem = stream.populate('parent');
   }
-  var partPromise = iface.sqlQuery('SELECT * FROM core_development.part_catalogs where purchaseable=1 && active=1 limit 100').then(function(arr) {
-    var obj = {};
-    var subobj;
-    for(var i=0; i < arr.length; i++) {
-      subobj = {};
-      for(var prop in arr[i]) {
-        subobj[prop] = arr[i][prop];
-      }
-      obj[subobj.version_id] = subobj;
-    }
-    return obj;
+  var partPromise = iface.sqlQuery('SELECT * FROM core_development.part_catalogs where purchaseable=1 && active=1 limit 1000').then(function(arr) {
+    return arr;
+    //var obj = {};
+    //var subobj;
+    //for(var i=0; i < arr.length; i++) {
+    //  subobj = {};
+    //  for(var prop in arr[i]) {
+    //    subobj[prop] = arr[i][prop];
+    //  }
+    //  obj[subobj.version_id] = subobj;
+    //}
+    //return obj;
   });
 
   var requiredObjects = function(name, doc) {
@@ -97,14 +98,38 @@ router.get('/edit/:name/:id', function(req, res, next) {
     return prom;
   };
 
+  var allObjects = function() {
+    var q = {};
+    return Promise.all(['phase', 'building', 'component'].map(function(name) {
+      var cap = name[0].toUpperCase() + name.slice(1);
+      return iface[cap].find(q).then(function(result) {
+        return [name + 's', result];
+      });
+    })).then(function(arr) {
+      var ob = {};
+      for(var i=0; i<arr.length; i++) {
+        ob[arr[i][0]] = arr[i][1];
+      }
+      return ob;
+    });
+  }
+
   stream.then(function(doc) {
     if(doc == null) return next({status: 404, error: new Error('not found')});
 
-    return Promise.all([partPromise, requiredObjects(Model.modelName, doc)]).then(function(all) {
+    return Promise.all([partPromise, requiredObjects(Model.modelName, doc), allObjects()]).then(function(all) {
       var parts = all[0];
       var objects = all[1];
+      var all = all[2];
 
-      res.render(path.join('pages/edit/', Model.modelName.toLowerCase()), {doc: doc, parts: parts, objects: objects});
+      var ret = {};
+      ret.doc = doc;
+      ret.parts = parts;
+      for(var prop in all) {
+        ret[prop] = all[prop];
+      }
+      console.log(Object.keys(ret));
+      res.render(path.join('pages/edit/', Model.modelName.toLowerCase()), ret);
     });
 
   }).catch(function(err) {

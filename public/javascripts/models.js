@@ -1,240 +1,203 @@
-// base models
-var Model = Backbone.Model.extend({
-  idAttribute: '_id',
-  initialize: function() {
-    this.repo = this.collection.repo;
+var Element = Backbone.Model.extend({
+  idAttribute: '_id'
+});
+var Phase = Element.extend({
+  type: 'phase',
+  getURL: function() {
+    return '/app/edit/phases/' + this.get(this.idAttribute);
+  }
+});
+var Building = Element.extend({
+  type: 'building',
+  getURL: function() {
+    return '/app/edit/buildings/' + this.get(this.idAttribute);
+  }
+});
+var Component = Element.extend({
+  type: 'component',
+  getURL: function() {
+    return '/app/edit/component/' + this.get(this.idAttribute);
   },
-  saveHash: function() {
-    var repo = this.repo || this.collection.repo;
-    var text = JSON.stringify(this.toJSON());
-
-    return this.repo.saveAsP('blob', text).then(function(hash) {
-      return hash;
-    });
+  getBuilding: function() {
+    if(this.get('job') == null) return null;
+    var building = jobs.get(this.get('job')).collections.buildings.get(this.get('building'));
+    return building ? building.get('name') : null;
   },
-  loadHash: function(hash, type) {
-    return this.repo.loadAsP(type || 'text', hash || this.hash);
+  getPhase: function() {
+    if(this.get('job') == null) return null;
+    var phase = jobs.get(this.get('job')).collections.phases.get(this.get('phase'));
+    return phase ? phase.get('name') : null;
+  }
+});
+var Part = Backbone.Model.extend({
+  idAttribute:'version_id',
+  type: 'part',
+  defaults: {
+    name: 'Part',
+    qty: 0,
+    price: 0.00,
+    description: '',
+    part: ''
   }
 });
 
-var Collection = Backbone.Collection.extend({
-  initialize: function(attrs, options) {
-    if(options.repo) this.repo = options.repo;
-    if(this.repo && this.repo.createTree === undefined) git.initializeRepo(this.repo);
+var Job = Backbone.Model.extend({
+  type: 'job',
+  idAttribute: '_id',
+  initialize: function(params, options) {
+    this.collections = options.collections || {};
+  }
+});
+
+var Search = Backbone.Model.extend({
+  defaults: {
+    query: '',
+    filters: [],
+    suggestedFilters: [],
+    active: false,
+    results: []
   },
-  saveHash: function() {
-    // save any collection-level properties. may not be used
+  initialize: function(params, options) {
+    this.on('change:query', this.input);
+    this.on('change:suggestedFilters', this.suggestion);
+    this.collections = options.collections;
   },
-  saveTree: function() {
-    // create tree based on model contents
-    if(this.name == null) throw new Error('need name!');
-    if(this.repo == null) throw new Error('repo undefined!');
+  input: function() {
+    var query = this.get('query');
+    var filters = this.get('filters');
+    var filtersChanged = false;
+    var results;
+    var filterKinds = [];
 
-    return Promise.all(this.map((model) => {
-      return model.saveHash().then(function(hash) {
-        return [model.get('_id'), hash];
-      });
-    })).then(function(arr) {
-      var tree = {};
-      arr.forEach(function(pair) {
-        tree[pair[0]] = { mode: git.modes.file, hash: pair[1] }
-      });
-      return this.repo.saveAsP('tree', tree);
-    });
-  },
-  // initiate synchronization with similar collection
-  // attach message channel sync to collection in worker, frame, etc
-  syncTo: function(worker) {
-    var self = this;
-    if(self.name == null) throw new Error('collection must have name for pairing');
+    var b = false;
+    var model, models;
+    for(var i=0,filter; filter=filters[i], i<filters.length; i++) {
+      if(filter.kind == 'type') {
+        var col;
+        switch(filter.type) {
+          case 'job':
+            col = col || this.collections.jobs;
+          case 'phase':
+            col = col || this.collections.phases;
+          case 'building':
+            col = col || this.collections.buildings;
+          case 'component':
+            col = col || this.collections.components;
+            if(model = col.get(query)) {
+              filtersChanged = true;
+              filters.splice(i, 1);
+              filters.push({
+                kind: 'property',
+                property: filter.type,
+                value: model.get('_id'),
+                name: model.get('name')
+              });
+              query = '';
+              b = true;
 
-    return new Promise(function(resolve, reject) {
-      var channel = new MessageChannel();
-
-      var onFirstMessage = function(e) {
-        if(typeof e.data !== 'object') throw new Error('invalid data type');
-        var message = e.data;
-        if(message.type === 'setup') {
-          if(!message.data['status'] || message.data['status'] !== 'complete') {
-            return reject(message.data);
-          }
-          channel.port1.removeEventListener('message', onFirstMessage);
-          return resolve(self.syncFrom('serviceworker', channel.port1));
-
-        } else {
-          return reject(new Error('unrecognized message type'));
+            } else {
+              results = col.filter((j)=>j.get('name').toLowerCase().indexOf(query.toLowerCase()) != -1);
+            }
+            break;
+          case 'part':
+            col = this.collections.parts;
+            if(col) {
+              let queryParts = query.split(' ');
+              results = col.chain().filter((j)=>j.get('description') && queryParts.every((p)=>j.get('description').toLowerCase().indexOf(p) != -1)).first(20).value();
+            }
+            break;
 
         }
-      };
-      channel.port1.addEventListener('message', onFirstMessage);
-      channel.port1.start(); // required when using 'addEventListener' >:(
-
-      // send initial request
-      worker.postMessage({
-        type: 'setup',
-        data: {
-          type: 'collection',
-          path: self.url.startsWith('/') ? self.url.slice(1) : self.url,
-          name: self.name
+      } else if (filter.kind == 'property') {
+        // looking for model with this 'filter.property'
+        switch(filter.property) {
+          case 'job':
+            // phases, components, buildings
+            results = ['phases', 'components', 'buildings'].map((t)=>this.collections[t].filter((m)=>m.get('job') == filter.value && m.get('name').toLowerCase().indexOf(query.toLowerCase()) != -1)).reduce((a,b)=>a.concat(b));
+            break;
+          case 'phase':
+          case 'building':
+            // components
+            results = ['components'].map((t)=>this.collections[t].filter((m)=>m.get(filter.property) == filter.value && m.get('name').toLowerCase().indexOf(query.toLowerCase()) != -1)).reduce((a,b)=>a.concat(b));
+            break;
+          case 'parent':
+            // phases, buildings
+            results = ['phases', 'buildings'].map((t)=>this.collections[t].filter((m)=>m.get('parent') == filter.value && m.get('name').toLowerCase().indexOf(query.toLowerCase() != -1))).reduce((a,b)=>a.concat(b));
+            break;
         }
-      }, [channel.port2]);
-      // timeout
-      setTimeout(function() {
-        return reject(new Error('setup timeout reached'));
-      }, 1000);
-    });
-  },
-  syncFrom: function(clientId, port) {
-    // passed port when setup command is received for this collection
-    if(this.name == null) throw new Error('collection must have name for pairing');
-    var self = this;
-
-    var push = function() {
-      clearTimeout(this.syncop);
-      this.syncop = setTimeout(function() {
-        var message = {
-          type: 'sync',
-          data: {
-            on: self.name,
-            values: self.toJSON()
+      }
+    }
+    if(!b) {
+      var prefixes = ['job', 'phase', 'building', 'component', 'part'];
+      for(var j=0,prefix; prefix=prefixes[j],j < prefixes.length; j++) {
+        if(query.startsWith(prefix + ':') && this.collections[prefix + 's'] != null) {
+          query = query.slice(prefix.length+1);
+          if(filters.filter((f)=>f.kind=='type'&&f.type==prefix).length == 0) {
+            filtersChanged = true;
+            filters.push({
+              kind: 'type',
+              type: prefix,
+              name: prefix
+            });
           }
-        };
-        console.log('push!', message)
-        port.postMessage(message);
-      }, 100);
+          break;
+        }
+      }
     }
 
-    // for these events, send new collection state to other clients
-    self.on('add', push);
-    self.on('remove', push);
-    self.on('change', push);
+    // needs fixing
+    results = results || ['components', 'phases', 'buildings'].map((t)=>this.collections[t].filter((m)=>t == 'component' ? m.get('description').toLowerCase().startsWith(query.toLowerCase()) : m.get('name').toLowerCase().startsWith(query.toLowerCase()))).reduce((a,b)=>a.concat(b));
 
-    // receive other clients' updates
-    var onMessage = function(e) {
-      if(typeof e.data !== 'object') throw new Error('invalid data type');
-      var message = e.data;
-      var data = message.data;
-      if(message.type === 'sync') {
-        if(data.on !== self.name) throw new Error('collection mismatch');
-
-        self.off('add', push);
-        self.off('remove', push);
-        self.off('change', push);
-
-        self.fetchThen().then(function() {
-          // otherwise trigger syncs
-          self.on('add', push);
-          self.on('remove', push);
-          self.on('change', push);
-        });
-
-      } else {
-        throw new Error('unrecognized message type');
-      }
-    };
-
-    port.addEventListener('message', onMessage);
-    port.start();
-
-    port.addEventListener('error', function(err) {
-      console.log('error', err);
+    this.set({
+      results: results || [],
+      filters: _.clone(filters),
+      query: query
     });
+    //this.trigger('change', this);
+    if(filtersChanged) {
+      this.trigger('change:filters', this);
+    }
   },
-  fetchThen: function() {
-    var self = this;
-    return new Promise(function(resolve, reject) {
-      self.fetch({
-        success: function() {
-          var args = [].slice.call(arguments);
-          resolve(args);
-        },
-        error: function() {
-          var args = [].slice.call(arguments);
-          resolve(args); // or reject()
-        }
-      });
-    });
+  getFilters: function() {
+    return this.get('filters');
+  },
+  suggestion: function() {
   }
 });
 
-// should roughly mirror /models/
-var JobModel = Model.extend({
-  defaults: {
-    rootPhase: null
-  },
-  initialize: function(attrs, options) {
-    this.repo = this.collection.repo;
-    this.folders = this.collection.folders;
-  },
-  validate: function(attrs, options) {
-    if(attrs.name == null || attrs.name == '') return 'name required';
-    this.folders = options.folders;
-  },
-  saveTree: function() {
-    if(this.repo == null) throw new Error('repo undefined!');
 
-    return this.saveHash().then((selfhash) => {
-      return Promise.all([
-        this.folders.phases,
-        this.folders.buildings,
-        this.folders.components
-      ].map((col) => {
-        return col.saveTree().then(function(hash) {
-          return [col.name, hash];
-        });
-      })).then((pairs) => {
-        var tree = {};
-        tree[this.get('_id')] = { mode: git.modes.file, hash: selfhash };
-        pairs.forEach(function(pair) {
-          tree[pair[0]] = { mode: git.modes.tree, hash: pair[1] };
-        });
-        return this.repo.saveAsP('tree', tree);
-      });
-    }).then((treehash) => {
-      this.repo.treeWalkP(treehash).then(function(arr) {
-        console.log(arr);
-      });
-    });
+
+var nameToModel = function(name) {
+  switch(name) {
+    case 'phase':
+      return Phase;
+    case 'building':
+      return Building;
+    case 'component':
+      return Component;
+    default:
+      throw new Error('invalid name "'+name+'"');
   }
-});
-var JobCollection = Collection.extend({
-  name: 'jobs',
+}
+
+var Collection = Backbone.Collection.extend({});
+var Jobs = Collection.extend({
   url: '/api/jobs',
-  model: JobModel,
-  initialize: function(models, options) {
-    if(options.folders) this.folders = options.folders;
-    console.log(this.folders);
-    return Collection.prototype.initialize.apply(this, arguments);
-  }
+  model: Job
 });
-
-var PhaseModel = Model.extend({
-  initialize: function(attrs, options) {
-
-  }
-});
-var PhaseCollection = Collection.extend({
-  name: 'phases',
+var Phases = Collection.extend({
   url: '/api/phases',
-  model: PhaseModel
+  model: Phase
 });
-var BuildingModel = Model.extend({
-  initialize: function(attrs, options) {
-
-  }
-});
-var BuildingCollection = Collection.extend({
-  name: 'buildings',
+var Buildings = Collection.extend({
   url: '/api/buildings',
-  model: BuildingModel
+  model: Building
 });
-var ComponentModel = Model.extend({
-  initialize: function(attrs, options) {
-
-  }
-});
-var ComponentCollection = Collection.extend({
-  name: 'components',
+var Components = Collection.extend({
   url: '/api/components',
-  model: ComponentModel
+  model: Component
+});
+var Parts = Collection.extend({
+  url: '/api/parts',
+  model: Part
 });

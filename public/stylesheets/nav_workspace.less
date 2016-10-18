@@ -42,13 +42,16 @@ body {
 }
 
 .icon {
-  background: white;
+  //background: white;
 }
 
 input.toggle[type='checkbox'], input.toggle[type='radio'] {
   display: none;
   &:checked + label {
     .active-mixin;
+    & > span.fa {
+      vertical-align: inherit;
+    }
   }
   & + label {
     user-select: none;
@@ -159,7 +162,7 @@ span.icon {
             height: @navigation-height;
             padding: 0 6px;
             line-height: @navigation-height;
-            vertical-align: -5%; // override font awesome
+            //vertical-align: -5%; // override font awesome
           }
         }
       }
@@ -206,14 +209,17 @@ span.icon {
     }
   }
   @media(min-width: @lrg) {
-    .tree {
-      margin-left: @gutter-size;
+    .tree, .full {
+      &:not(:first-child) {
+        margin-left: @gutter-size;
+      }
     }
   }
 }
 
 .search-box {
   min-width: @search-width;
+  max-width: @search-width;
   padding: 0 10px;
   margin: 0 -10px;
   .search-result {
