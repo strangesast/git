@@ -7,8 +7,14 @@ body {
 @med: 600px;
 @lrg: 1200px;
 
-
 @header-height: 60px;
+@navigation-height: 40px;
+
+.hoverlight {
+  &:hover {
+    background: lightgrey;
+  }
+}
 
 .header {
   //background: red;
@@ -25,6 +31,7 @@ body {
     justify-content: space-between;
   }
 }
+
 @mp: 0.1; // minimum percentage
 @lrgm: (@lrg * ((2*@mp)*(1 + (2*@mp)) + 1));
 @mp2: @med / ( @med - @sml ) * @mp; // 2nd minimum percentage
@@ -43,5 +50,72 @@ body {
   // lrg ->
   @media(min-width: @lrgm) {
     margin: 0 ~"calc(50% - " @lrg/2 ~");";
+  }
+}
+
+.outer {
+  margin: 0;
+  padding: 0;
+}
+
+.spacer {
+  flex-grow: 1;
+}
+
+.icon {
+  color: inherit;
+  text-decoration: none;
+  span {
+    padding: 8px;
+    &:not(:first-child) {
+      padding-left: 0;
+    }
+  }
+}
+
+.icon.link:hover {
+  cursor: pointer;
+}
+
+.dropdown {
+  position: relative;
+  //background: red;
+  & > *:first-child {
+    float: right;
+  }
+  .dropdown-body {
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+    z-index: 20;
+    position: absolute;
+    min-width: 100px;
+    top: 0; // or 100%;
+    right: 0;
+    display: none; //flex;
+    flex-direction: column;
+    align-items: flex-end;
+    background: white;
+    & > * {
+      height: @navigation-height;
+      width: 100%;
+      text-align: right;
+      & > * {
+        padding: 8px;
+        line-height: @navigation-height;
+      }
+      .hoverlight;
+    }
+
+  }
+  &.bottom > .dropdown-body {
+    top: 100%;
+  }
+  &:hover {
+    .dropdown-body {
+      display: flex;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+    }
   }
 }

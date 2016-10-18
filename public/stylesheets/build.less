@@ -1,0 +1,139 @@
+@tree-element-height: 60px;
+@navigation-height: 40px;
+
+.active-mixin {
+  filter: invert(100%);
+}
+
+.hoverlink {
+  color: inherit;
+  text-decoration: none;
+  &:hover {
+    cursor: pointer;
+    text-decoration: underline;
+  }
+}
+
+.tree-element {
+  display: flex;
+  align-items: center;
+
+  a, span:not(.icon):not(.spacer):not(.name) {
+    margin: 0 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .edit {
+    span {
+      margin: 0;
+    }
+    .hoverlink;
+    display: none;
+  }
+  &:hover .edit {
+    display: block;
+  }
+}
+
+.tree {
+  flex-grow: 1;
+  min-width: 0;
+  position: relative;
+
+  .tree-filters {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    & > div {
+      height: @navigation-height;
+      line-height: @navigation-height;
+      & > span {
+        margin: 6px;
+      }
+      .remove {
+        color: inherit;
+        text-decoration: none;
+        &:hover {
+          cursor: pointer;
+        }
+      }
+    }
+  }
+  .tree-element {
+    position: relative;
+    height: @tree-element-height;
+    z-index: 5;
+    &.hover {
+      outline: 2px solid black;
+      & ~ .tree-element:not(.fake) {
+        transform: translateY(@tree-element-height);
+      }
+    }
+    &:focus, &.active {
+      outline: none;
+      filter: invert(100%);
+    }
+
+    &.fake {
+      position: absolute;
+      right: 0;
+      top: 0;
+      left: 0;
+      z-index: 4;
+      .active-mixin;
+      &.hidden {
+        display: none;
+      }
+    }
+    .mask.left, .mask.right {
+      display: none;
+      position: absolute;
+      width: 50%;
+      height: 100%;
+      top: 0;
+      opacity: 0;
+      transition: opacity 10s ease-in;
+      text-align: center;
+      line-height: @tree-element-height;
+      font-size: 2em;
+    }
+    &.hover .mask {
+      opacity: 1;
+      border: 2px dashed black;
+    }
+    .mask.left {
+      left: 0;
+    }
+    .mask.right {
+      right: 0;
+    }
+    &.hover .mask.left:after {
+      content: 'sibling';
+    }
+    &.hover .mask.right:after {
+      content: 'child';
+    }
+  }
+  &.dragging > .tree-element > .mask {
+    display: block;
+  }
+}
+.search-result, .tree-element {
+  background: white;
+  transition: transform 0.2s ease;
+
+  .generate-levels(10);
+  .generate-levels(@n, @i: 0) when(@i =< @n) {
+    &[level='@{i}'] {
+      margin-left: @i * 20px;
+    }
+    .generate-levels(@n, (@i + 1));
+  }
+  &.dragged {
+    opacity: 0.5;
+  }
+  &:focus, &.active {
+  }
+}

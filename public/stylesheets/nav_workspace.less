@@ -10,36 +10,9 @@ body {
 
 @top-height: 200px;
 @navigation-height: 40px;
-@tree-element-height: 60px;
 
 @gutter-size: 20px;
 @search-width: 300px;
-
-.outer {
-  margin: 0;
-  padding: 0;
-}
-
-.spacer {
-  flex-grow: 1;
-}
-
-.icon, a.icon {
-  color: inherit;
-  text-decoration: none;
-  span {
-    padding: 8px;
-    &:not(:first-child) {
-      padding-left: 0;
-    }
-  }
-
-  background: white;
-}
-
-.icon.link:hover {
-  cursor: pointer;
-}
 
 // used elsewhere
 .active-mixin {
@@ -50,11 +23,32 @@ body {
     background: lightgrey;
   }
 }
+.nostyle {
+  color: inherit;
+  text-decoration: none;
+}
+.hoverstyle {
+  &:hover {
+    cursor: pointer;
+  }
+}
+.hoverlink {
+  color: inherit;
+  text-decoration: none;
+  &:hover {
+    cursor: pointer;
+    text-decoration: underline;
+  }
+}
+
+.icon {
+  background: white;
+}
 
 input.toggle[type='checkbox'], input.toggle[type='radio'] {
   display: none;
   &:checked + label {
-  .active-mixin;
+    .active-mixin;
   }
   & + label {
     user-select: none;
@@ -70,52 +64,7 @@ span.icon {
   text-align: center;
 }
 
-.dropdown {
-  position: relative;
-  //background: red;
-  & > *:first-child {
-    float: right;
-  }
-  .dropdown-body {
-    a {
-      color: inherit;
-      text-decoration: none;
-    }
-    z-index: 20;
-    position: absolute;
-    min-width: 100px;
-    top: 0; // or 100%;
-    right: 0;
-    display: none; //flex;
-    flex-direction: column;
-    align-items: flex-end;
-    background: white;
-    & > * {
-      height: @navigation-height;
-      width: 100%;
-      text-align: right;
-      & > * {
-        padding: 8px;
-        line-height: @navigation-height;
-      }
-      .hoverlight;
-    }
-
-  }
-  &.bottom > .dropdown-body {
-    top: 100%;
-  }
-  &:hover {
-    .dropdown-body {
-      display: flex;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
-    }
-  }
-}
-
 .top {
-  //background: blue;
-
   .container {
     height: @top-height;
     display: flex;
@@ -136,20 +85,15 @@ span.icon {
     }
     .information {
       flex-grow: 1;
-      //background: orange;
     }
   }
 }
 
 .body {
-  //background: purple;
-
   .navigation > .container {
     max-height: @navigation-height;
     display: flex;
     position: relative;
-    //background: green;
-    //padding: 10px 0;
     
     .search {
       display: flex;
@@ -269,7 +213,6 @@ span.icon {
 
 .search-box {
   min-width: @search-width;
-  //background: teal;
   padding: 0 10px;
   margin: 0 -10px;
   .search-result {
@@ -292,161 +235,7 @@ span.icon {
   }
 }
 
-.tree {
-  flex-grow: 1;
-  min-width: 0;
-  position: relative;
-
-  .tree-filters {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    & > div {
-      height: @navigation-height;
-      line-height: @navigation-height;
-      & > span {
-        margin: 6px;
-      }
-      .remove {
-        color: inherit;
-        text-decoration: none;
-        &:hover {
-          cursor: pointer;
-        }
-      }
-    }
-  }
-  .tree-element {
-    position: relative;
-    height: @tree-element-height;
-    z-index: 5;
-    &.hover {
-      //filter: invert(100%);
-      outline: 2px solid black;
-      & ~ .tree-element:not(.fake) {
-        transform: translateY(@tree-element-height);
-      }
-    }
-    &:focus, &.active {
-      outline: none;
-      filter: invert(100%);
-    }
-
-    &.fake {
-      position: absolute;
-      right: 0;
-      top: 0;
-      left: 0;
-      //background: red;
-      z-index: 4;
-      .active-mixin;
-      &.hidden {
-        display: none;
-      }
-    }
-    .mask.left, .mask.right {
-      display: none;
-      position: absolute;
-      width: 50%;
-      height: 100%;
-      top: 0;
-      opacity: 0;
-      transition: opacity 10s ease-in;
-      text-align: center;
-      line-height: @tree-element-height;
-      font-size: 2em;
-    }
-    &.hover .mask {
-      opacity: 1;
-      border: 2px dashed black;
-    }
-    .mask.left {
-      left: 0;
-      //background: red;
-    }
-    .mask.right {
-      right: 0;
-      //background: green;
-    }
-    &.hover .mask.left:after {
-      content: 'sibling';
-    }
-    &.hover .mask.right:after {
-      content: 'child';
-    }
-  }
-  &.dragging > .tree-element > .mask {
-    display: block;
-  }
-}
-.search-result, .tree-element {
-  background: white;
-  transition: transform 0.2s ease;
-
-  .generate-levels(10);
-  .generate-levels(@n, @i: 0) when(@i =< @n) {
-    &[level='@{i}'] {
-      margin-left: @i * 20px;
-    }
-    .generate-levels(@n, (@i + 1));
-  }
-  &.dragged {
-    opacity: 0.5;
-  }
-  &:focus, &.active {
-  }
-}
-
-.tree-element {
-  display: flex;
-  //background: turquoise;
-  align-items: center;
-
-  a, span:not(.icon):not(.spacer) {
-    margin: 0 10px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .name {
-    min-width: 80px;
-  }
-
-  .edit {
-    span {
-      margin: 0;
-    }
-    .hoverlink;
-    display: none;
-  }
-  &:hover .edit {
-    display: block;
-  }
-}
-
-.nostyle {
-  color: inherit;
-  text-decoration: none;
-}
-.hoverstyle {
-  &:hover {
-    cursor: pointer;
-  }
-}
-.hoverlink {
-  color: inherit;
-  text-decoration: none;
-  &:hover {
-    cursor: pointer;
-    text-decoration: underline;
-  }
-}
-
-
-
 .footer {
-  //background: orange;
 }
 
 .container {
