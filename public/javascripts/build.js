@@ -127,7 +127,7 @@ var Navbar = BaseView.extend({
     for(var prop in params) {
       this[prop] = params[prop];
     }
-    this.bindTo = {search: this.search, tree: this.tree, view: this};
+    this.bindTo = {search: this.search, tree: this.tree, view: this, treeview: this.treeview};
     this.listenTo(this.search, 'change:query', () => this.binding ? this.binding.sync() : null); // hacked
     this.listenTo(this.search, 'change:filters', this.updateoffset);
   },
@@ -177,7 +177,7 @@ var SearchResults = BaseView.extend({
     'click .filter' : 'addFilter'
   },
   addFilter: function(e) {
-    var parEl = e.currentTarget.parentElement;
+    var parEl = e.currentTarget.parentElement.parentElement;
     var type = parEl.getAttribute('data-type');
     var id = parEl.getAttribute('data-id');
     this.model.set('query', type + ':' + id);
@@ -228,7 +228,8 @@ var TreeView = BaseView.extend({
     for(var prop in params) {
       this[prop] = params[prop];
     }
-    this.bindTo = {model: this.model};
+    this['short'] = false;
+    this.bindTo = {model: this.model, view: this};
     this.listenTo(this.model, 'build', this.render);
     this.model.build();
   },
@@ -558,7 +559,7 @@ var searchModel = new Search(null, {collections: {phases: phases, buildings: bui
 var searchView = new SearchResults({model: searchModel, search: searchModel, treeView: treeView});
 searchView.render();
 
-var navbar = new Navbar({tree: treeModel, search: searchModel}); 
+var navbar = new Navbar({tree: treeModel, search: searchModel, treeview: treeView}); 
 navbar.render();
 var description = new Description({job: job}); 
 description.render();

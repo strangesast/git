@@ -115,7 +115,7 @@ var SearchResults = BaseView.extend({
     // typically look for active component (if multiple pages open)
   },
   addFilter: function(e) {
-    var parEl = e.currentTarget.parentElement;
+    var parEl = e.currentTarget.parentElement.parentElement;
     var type = parEl.getAttribute('data-type');
     var id = parEl.getAttribute('data-id');
     this.model.set('query', type + ':' + id);

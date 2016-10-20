@@ -109,9 +109,9 @@
         .options
           div.filter(rv-if='result.type | isNotPart') Add filter
           if doc
-            .add
+            .add(rv-if='result.type | isPart')
               | Add 
-              .icon.fa.fa-plus.fa-lg
+              .icon.fa.fa-plus
       .search-result(rv-if='view.treeView', draggable='true', tabindex=2, data-type='phase')
         h3 New Phase
       .search-result(rv-if='view.treeView', draggable='true', tabindex=2, data-type='building')

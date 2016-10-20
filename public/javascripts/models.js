@@ -20,7 +20,7 @@ var Component = Element.extend({
   },
   updateParts: function() {
     if(!this.parts) return;
-    console.log(this.parts);
+    //console.log(this.parts);
   },
   getURL: function() {
     return '/app/edit/component/' + this.get(this.idAttribute);
@@ -242,6 +242,8 @@ var PartRefs = Backbone.Collection.extend({
     if(!_.isEqual(cparts[index], json)) {
       cparts[index] = json;
       this.component.set('parts', cparts);
+      this.component.trigger('change', this.component);
+      this.component.trigger('change:parts', this.component);
     }
   },
   partAdd: function(model, collection, options) {

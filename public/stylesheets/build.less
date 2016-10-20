@@ -52,7 +52,7 @@
   display: flex;
   align-items: center;
 
-  a, span {
+  a, span, i {
     white-space: nowrap;
     &:not(.icon):not(.spacer):not(.name) {
       margin: 0 10px;
@@ -127,6 +127,9 @@
     }
     .generate-levels(@n, (@i + 1));
   }
+}
+.tree.short > .tree-element {
+  height: @tree-element-height/2;
 }
 .search-result, .tree-element {
   background: white;
