@@ -14,7 +14,6 @@ var Job = require('../models/job');
 var Phase = require('../models/phase');
 var Building = require('../models/building');
 var Component = require('../models/component');
-var PartRef = require('../models/partref');
 
 var nameToModel = function(name) {
   var Model;
@@ -219,6 +218,7 @@ router.get('/components/:id/parts', function(req, res, next) {
   });
 });
 
+// needs to be updated
 router.post('/components/:id/parts', function(req, res, next) {
   var id = req.params.id;
   var body = req.body;
@@ -245,6 +245,7 @@ router.post('/components/:id/parts', function(req, res, next) {
   });
 });
 
+// needs to be updated
 router.delete('/components/:id/parts', function(req, res, next) {
   var id = req.params.id;
   var body = req.body;

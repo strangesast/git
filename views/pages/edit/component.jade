@@ -62,26 +62,12 @@ block workspace
                 th Price
   
             tbody
-              if doc.parts.length
-                each part in doc.parts
-                  tr
-                    td=((part.part in parts) ? parts[part.part].description : part.part)
-                    td=part.name
-                    td=part.description
-                    td=part.qty
-                    td=part.price
-              else
-                tr
-                  td No parts
-                  td No parts
-                  td No parts
-                  td No parts
-                  td No parts
-
-          label(for='new-part-name')
-          br
-          input#new-part-name(name='name', type='text', value='new part')
-          button.add Add Part
+              tr(rv-each-part='model:parts')
+                td { part.part }
+                td { part.name }
+                td { part.description }
+                td { part.qty }
+                td { part.price }
 
 
 block scripts

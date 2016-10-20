@@ -84,9 +84,7 @@ router.get('/:username/:shortname', function(req, res, next) {
         .populate('parent', 'name')
         .populate('phase', 'name')
         .populate('building', 'name')
-        .populate('parts')
       )).then(function(arr) {
-        console.log(arr);
         return {phases: arr[0], buildings: arr[1], components: arr[2]};
       });
 

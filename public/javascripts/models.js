@@ -20,7 +20,7 @@ var Component = Element.extend({
   },
   updateParts: function() {
     if(!this.parts) return;
-    console.log(updateParts);
+    console.log(this.parts);
   },
   getURL: function() {
     return '/app/edit/component/' + this.get(this.idAttribute);
@@ -42,6 +42,16 @@ var Part = Backbone.Model.extend({
   defaults: {
     name: 'Part',
     qty: 0,
+    price: 0.00,
+    description: '',
+    part: ''
+  }
+});
+
+var PartRef = Backbone.Model.extend({
+  defaults: {
+    name: 'New Part',
+    qty: 1,
     price: 0.00,
     description: '',
     part: ''
@@ -209,4 +219,48 @@ var Components = Collection.extend({
 var Parts = Collection.extend({
   url: '/api/parts',
   model: Part
+});
+var PartRefs = Backbone.Collection.extend({
+  url: function() {
+    return '/api/components/' + this.component.get('_id') + '/parts';
+  },
+  model: PartRef,
+  initialize: function(models, options) {
+    if(options == null || options.component == null || !(options.component instanceof Component)) throw new Error('invalid');
+    this.component = options.component;
+    this.on('add', this.partAdd);
+    this.on('remove', this.partRemove);
+    this.on('change', this.partChange);
+    this.on('reset', this.partReset);
+  },
+  partChange: function(model, options) {
+    var cparts = this.component.get('parts');
+    var partIds = cparts.map((p)=>p.part);
+    var index;
+    if((index=partIds.indexOf(model.get('part'))) == -1) throw new Error('goofy');
+    var json = model.toJSON();
+    if(!_.isEqual(cparts[index], json)) {
+      cparts[index] = json;
+      this.component.set('parts', cparts);
+    }
+  },
+  partAdd: function(model, collection, options) {
+    var cparts = this.component.get('parts') || [];
+    if(cparts.map((p)=>p.part).indexOf(model.get('part')) == -1) { // only allows a single instance of part with version_id
+      this.component.set('parts', cparts.concat(model.toJSON()));
+    }
+  },
+  partRemove: function(model, collection, options) {
+    var id = model.get('part');
+    var cparts = this.component.get('parts');
+    if(cparts.map((p)=>p.part).indexOf(id) != -1) {
+      this.component.set('parts', cparts.filter((p)=>p.part!=id)); // may be better to use splice.  in this case only one part of a particular ver_id may be used
+    }
+  },
+  partReset: function(collection, options) {
+    var ids = collection.map((m)=>m.get('version_id'));
+    if(!_.isEqual(ids, this.component.get('parts'))) {
+      this.component.set('parts', ids);
+    }
+  }
 });

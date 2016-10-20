@@ -87,7 +87,32 @@ var SearchResults = BaseView.extend({
   events: {
     'dragstart': 'dragstart',
     'dragend': 'dragend',
-    'click .filter' : 'addFilter'
+    'click .filter' : 'addFilter',
+    'click .search-result .add': 'addPart'
+  },
+  addPart: function(e) {
+    var par = e.currentTarget.parentElement.parentElement;
+    var id = par.getAttribute('data-id');
+    var type = par.getAttribute('data-type');
+    if(id == null || type == null) throw new Error('goofy');
+    var model = this.model.collections[type + 's'].get(id);
+    if(model == null) throw new Error('goofy');
+    var parts = component.parts;
+
+    var existing = parts.findWhere({'part':model.get('version_id')});
+    if(existing) {
+      existing.set('qty', (existing.get('qty') || 0) + 1);
+    } else {
+      let name = model.get('name');
+      let desc = model.get('description');
+      var pr = new PartRef({
+        name: (name == null || name == 'Part') ? desc : name,
+        part: model.get('version_id')
+      });
+      parts.add(pr);
+    }
+
+    // typically look for active component (if multiple pages open)
   },
   addFilter: function(e) {
     var parEl = e.currentTarget.parentElement;
@@ -162,6 +187,7 @@ var phases = new Phases();
 var buildings = new Buildings();
 var components = new Components();
 var parts = new Parts();
+var component;
 
 if(typeof PREFETCH !== 'undefined') {
   
@@ -179,8 +205,11 @@ if(typeof PREFETCH !== 'undefined') {
 
 
   if(PREFETCH.component) {
-    var component = components.get(PREFETCH.component['_id']);
-    component.parts = new Parts();
+    component = components.get(PREFETCH.component['_id']);
+
+    component.parts = new PartRefs(component.get('parts'), {component: component});
+
+
     var view = new View({model: component});
     view.render();
 
@@ -191,6 +220,8 @@ if(typeof PREFETCH !== 'undefined') {
     var searchView = new SearchResults({model: searchModel});
     searchView.render();
 
+    var partTable = new PartTable({model: component});
+    partTable.render();
   }
 
 } else {

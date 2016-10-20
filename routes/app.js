@@ -118,7 +118,6 @@ router.get('/edit/:name/:id', function(req, res, next) {
       for(var prop in all) {
         ret[prop] = all[prop];
       }
-      console.log(Object.keys(ret));
       res.render(path.join('pages/edit/', Model.modelName.toLowerCase()), ret);
     });
 

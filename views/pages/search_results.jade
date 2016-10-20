@@ -102,10 +102,16 @@
 
   template
     .search-box#search-results
-      .search-result(rv-each-result='model:results', rv-data-type='result.type', rv-data-id='result:_id', rv-draggable='result.type | isPart', tabindex=2)
-        span(rv-class='result.type | icon_class')
-        | { result:name | or result:description }
-        div.filter(rv-if='result.type | isNotPart') Add filter
+      .search-result(rv-each-result='model:results', rv-data-type='result.type', rv-data-id='result:_id | or result:version_id', rv-draggable='result.type | isPart', tabindex=2)
+        .name
+          span(rv-class='result.type | icon_class')
+          | { result:name | or result:description }
+        .options
+          div.filter(rv-if='result.type | isNotPart') Add filter
+          if doc
+            .add
+              | Add 
+              .icon.fa.fa-plus.fa-lg
       .search-result(rv-if='view.treeView', draggable='true', tabindex=2, data-type='phase')
         h3 New Phase
       .search-result(rv-if='view.treeView', draggable='true', tabindex=2, data-type='building')

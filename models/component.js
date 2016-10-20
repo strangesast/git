@@ -2,7 +2,26 @@ var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 var Mixed = Schema.Types.Mixed;
 var ObjectId = Schema.Types.ObjectId;
-var PartRef = require('./partref');
+
+var partRef = new Schema({
+  name: {
+    type: String,
+    default: 'New Part',
+    required: true
+  },
+  qty: {
+    type: Number,
+    default: 1
+  },
+  price: {
+    type: Number, // sell
+    default: 0.00
+  },
+  description: String,
+  part: String // version id of core part
+
+});
+
 
 var schema = new Schema({
   name: {
@@ -29,10 +48,7 @@ var schema = new Schema({
     default: null,
     ref: 'Component'
   },
-  parts: [{
-    type: ObjectId,
-    ref: 'PartRef'
-  }],
+  parts: [partRef],
   description: String
 
 }, {timestamps: true});
@@ -43,11 +59,11 @@ schema.pre('validate', function(next) {
   next();
 });
 
-schema.virtual('part').set(function(part) {
-  var model = new PartRef({part: part});
-  model.save();
-  this.parts.push(model._id);
-  console.log(this);
-});
+//schema.virtual('part').set(function(part) {
+//  var model = new PartRef({part: part});
+//  model.save();
+//  this.parts.push(model._id);
+//  console.log(this);
+//});
 
 module.exports = Component = mongoose.model('Component', schema);

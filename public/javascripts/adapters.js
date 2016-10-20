@@ -86,8 +86,8 @@ rivets.formatters.isNotPart = function(value) {
 
 
 rivets.formatters.or = function(value, arg) {
-  if(value != 'Part') return value;
-  return arg;
+  if(value == 'Part' || value == null) return arg;
+  return value;
 }
 
 rivets.formatters['notnull'] = function(value, arg) {

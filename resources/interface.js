@@ -7,7 +7,6 @@ var Job = require('../models/job');
 var Phase = require('../models/phase');
 var Building = require('../models/building');
 var Component = require('../models/component');
-var PartRef = require('../models/partref');
 
 var common = require('./common')
 
@@ -27,9 +26,6 @@ var iface = {
       case 'components':
       case 'component':
         return Component;
-      case 'partrefs':
-      case 'partref':
-        return PartRef;
       default:
         throw new Error('unknown name "'+name+'"');
     }
@@ -39,14 +35,12 @@ var iface = {
   Account: Account,
   Building: Building,
   Component: Component,
-  PartRef: PartRef,
   getData: function() { // temporary
     return Promise.all([
       'jobs',
       'phases',
       'buildings',
-      'components',
-      'partrefs'
+      'components'
     ].map((name)=>{
       return iface.nameToModel(name).find({}).then((docs) => {
         return [name, docs];
