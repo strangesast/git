@@ -63,7 +63,7 @@ var common = (function() {
       var ordered = ['component', 'building', 'phase'];
 
       for(var i=0, prop; prop = ordered[i], i < ordered.length; i++) {
-        var type = types[prop];
+        let type = types[prop];
         if(type.enabled) {
           let f = (ob) => ob['parent'] == type.root && (type != component || (common.hasAncestor(phase.descendants, ob['phase'], phase.root) && common.hasAncestor(building.descendants, ob['building'], building.root)));
           let parents = type.objects.filter(f);
@@ -93,11 +93,30 @@ var common = (function() {
       
       return {tree: all, included: included};
     },
-    generatorTree: function* (phases, buildings, components) {
-      var level = 0;
-      var roots = yield;
-      if(roots == null) {
+    generatorTree: function* (phase, building, component, level, options) {
+      level = level || 0;
+      options = options || {};
+      phase = {enabled: phase && phase.enabled, root: (phase && phase.root) ? phase.root : null, objects: phase.objects, descendants: phase.descendants};
+      building = {enabled: building && building.enabled, root: (building && building.root) ? building.root : null, objects: building.objects, descendants: building.descendants};
+      component = {enabled: component && component.enabled, root: (component && component.root) ? component.root : null, objects: component.objects, descendants: component.descendants};
+
+      var all = [];
+      var included = {};
+
+      var types = {phase: phase, building: building, component: component};
+      var ordered = ['component', 'building', 'phase'];
+
+      for(var i=0, prop; prop = ordered[i], i < ordered.length; i++) {
+        let type = types[prop];
+        if(type.enabled) {
+          let f = (ob) => ob['parent'] == type.root && (type != component || (common.hasAncestor(phase.descendants, ob['phase'], phase.root) && common.hasAncestor(building.descendants, ob['building'], building.root)));
+          let parents = type.objects.filter(f);
+          all.push.apply(all, parents);
+        }
       }
+
+      yield all; // level 0
+      return;
     }
   };
   return common;
