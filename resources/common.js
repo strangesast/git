@@ -27,112 +27,80 @@ var common = (function() {
     };
   }
 
-  return {
-    assembleTree: function(data) {
-      // data = [phases, buildings, components]
-      var getPhaseDescendants = getDescendants(data[0]);
-      var getBuildingDescendants = getDescendants(data[1]);
+  var common = {
+    hasAncestor: function(obj, prop, root) {
+      if(prop == root) return true;
+      if(typeof obj == 'undefined' || obj ==  null || obj[prop] == null) return false;
+      return obj[prop].indexOf(root) != -1 ? true : false;
+    },
+    getDescendants: function(arr) {
+      var descendants = {};
+      for(var i=0; i < arr.length; i++) {
+        descendants[arr[i]['_id']] = [arr[i]['parent']];
+      }
+      for(var id in descendants) {
+        let par;
+        do {
+          par = descendants[id].slice(-1)[0];
+          if(par == null) break;
+          if(descendants[par].indexOf(id) != -1) break; // should prob throw error
+          descendants[id] = descendants[id].concat(descendants[par]);
+        } while (par != null);
+      }
+      return descendants;
+    },
+    betterTree: function(phase, building, component, level, options) {
+      level = level || 0;
+      options = options || {};
+      phase = {enabled: phase && phase.enabled, root: (phase && phase.root) ? phase.root : null, objects: phase.objects, descendants: phase.descendants};
+      building = {enabled: building && building.enabled, root: (building && building.root) ? building.root : null, objects: building.objects, descendants: building.descendants};
+      component = {enabled: component && component.enabled, root: (component && component.root) ? component.root : null, objects: component.objects, descendants: component.descendants};
+
+      var all = [];
+      var included = {};
+
+      var types = {phase: phase, building: building, component: component};
+      var ordered = ['component', 'building', 'phase'];
+
+      for(var i=0, prop; prop = ordered[i], i < ordered.length; i++) {
+        var type = types[prop];
+        if(type.enabled) {
+          let f = (ob) => ob['parent'] == type.root && (type != component || (common.hasAncestor(phase.descendants, ob['phase'], phase.root) && common.hasAncestor(building.descendants, ob['building'], building.root)));
+          let parents = type.objects.filter(f);
+          for(let j=0,_parent; _parent=parents[j], j < parents.length; j++) {
+            let both = common.betterTree(
+                {enabled: type == phase ? phase.enabled : false,        root: type == phase ? _parent['_id'] : phase.root, objects: phase.objects, descendants: phase.descendants},
+                {enabled: type != component ? building.enabled : false, root: type == building ? _parent['_id'] : building.root, objects: building.objects, descendants: building.descendants},
+                {enabled: component.enabled,                            root: type == component ? _parent['_id'] : component.root, objects: component.objects},
+                level+1,
+                options);
+            let children = both.tree;
+            all.push({
+              '_id': _parent['_id'],
+              type: prop,
+              level: level
+            });
+            if(options.included) {
+              included[_parent['_id']] = _parent;
+              Object.assign(included, both.included);
+            }
+            for(var k=0; k < children.length; k++) {
+              all.push(children[k]);
+            }
+          }
+        }
+      }
       
-      var components = data[2];
-
-      return function func(currentRootPhase, currentRootBuilding, level, phaseEnabled, buildingEnabled, componentEnabled, phaseDescendants, buildingDescendants, emptyFolders) {
-        var included = {phases: {}, buildings: {}, components: {}};
-        var tree = [];
-
-        //phaseEnabled = phaseEnabled == null ? true : !!phaseEnabled;
-        //buildingEnabled = buildingEnabled == null ? true : !!buildingEnabled;
-
-        // simplify stuff later
-        var append = function(arr) {
-          for(var i=0; i < arr.length; i++) {
-            tree.push(arr[i]);
-          }
-        };
-        var types = ['phases', 'buildings', 'components'];
-        var extend = function(ob) {
-          for(var i=0, type; type=types[i], i < types.length; i++) {
-            for(var prop in ob[type]) {
-              included[type][prop] = ob[type][prop];
-            }
-          }
-        };
-        if(currentRootPhase == null && !phaseEnabled) phaseDescendants = true;
-        if(currentRootBuilding == null && !buildingEnabled) buildingDescendants = true;
-
-        // for determining descendants
-        var phases, buildings;
-        if(phaseEnabled) phases = data[0].filter((p) => bool(p.parent, currentRootPhase));
-        if(buildingEnabled) buildings = data[1].filter((b) => bool(b.parent, currentRootBuilding));
-
-
-        var phase, building, component;
-        if (componentEnabled) {
-          phase = {'_id':currentRootPhase};
-          building = {'_id':currentRootBuilding};
-          var pdescendants;
-          var bdescendants;
-          if(phaseDescendants) pdescendants = getPhaseDescendants(phase).map((el)=>el._id);
-          if(buildingDescendants) bdescendants = getBuildingDescendants(building).map((el)=>el._id);
-
-          for(var k=0; component=components[k], k < components.length; k++) {
-            if(bool(component.phase, pdescendants || phase._id) && bool(component.building, bdescendants || building._id)) {
-              tree.push({type: 'component', _id: component._id, level: level});
-              if(!(component._id in included.components)) included.components[component._id] = component;
-            }
-          }
-        }
-
-        //                     otherwise building is repeated after phase on first level
-        if (buildingEnabled && (currentRootPhase != null || level != 0 || !phaseEnabled)) {
-          phase = {'_id':currentRootPhase};
-          for(var j=0; building=buildings[j], j < buildings.length; j++) {
-            tree.push({type: 'building', _id: building._id, level: level});
-            if(!(building._id in included.buildings)) included.buildings[building._id] = building;
-
-            let both = func(currentRootPhase, building._id, level+1, false, buildingEnabled, componentEnabled, phaseDescendants, buildingDescendants, emptyFolders);
-            extend(both.included);
-            append(both.tree);
-          }
-        }
-
-        if(phaseEnabled) {
-          for(var i=0; phase=phases[i], i < phases.length; i++) {
-            tree.push({type: 'phase', _id: phase._id, level: level});
-            if(!(phase._id in included.phases)) included.phases[phase._id] = phase;
-
-            let both = func(phase._id, currentRootBuilding, level+1, phaseEnabled, buildingEnabled, componentEnabled, phaseDescendants, buildingDescendants, emptyFolders);
-            extend(both.included);
-            append(both.tree);
-          }
-        }
-        if((componentEnabled == null || componentEnabled) && !emptyFolders) { // hide empty folders, but only when component enabled
-          var typeArr = tree.map((el)=>el.type);
-          var i=0;
-
-          while(i < tree.length) {
-            var nextPhase = typeArr.indexOf('phase', i+1);
-            var nextBuilding = typeArr.indexOf('building', i+1);
-            var nextFolder = Math.min(nextPhase == -1 ? Infinity : nextPhase, nextBuilding == -1 ? Infinity : nextBuilding);
-            var nextComp = typeArr.indexOf('component', i);
-            if(typeArr[i] === 'component' || (nextComp != -1 && ( // is component or still components still available
-                    (nextFolder == Infinity && tree[nextComp].level > tree[i].level) || // no more folders, next comp is lower
-                    (nextComp < nextFolder && tree[nextComp].level > tree[i].level) || // comp up next, lower
-                    (nextFolder != Infinity && tree[nextFolder].level > tree[i].level)) // folder up next, lower
-                  )) {
-              i++;
-            } else {
-              typeArr.splice(i, 1);
-              tree.splice(i, 1);
-            }
-          }
-        }
-        return {
-          tree: tree,
-          included: included
-        };
-      };
+      return {tree: all, included: included};
+    },
+    generatorTree: function* (phases, buildings, components) {
+      var level = 0;
+      var roots = yield;
+      if(roots == null) {
+      }
     }
   };
+  return common;
 })();
 
 if(typeof exports !== 'undefined') {

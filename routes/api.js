@@ -267,11 +267,12 @@ router.route('/:name1/:id1/:name2')
   if(req.params.name1 !== 'jobs') return next('route'); // eventually, not yet support this
   var Model1 = nameToModel(req.params.name1);
   var id1 = req.params.id1;
+  var options = req.query;
   Model1.findById(id1).then(function(doc) {
     if(doc == null) return next({status: 404, error: new Error('not found')});
     req.parentDoc = doc;
     if(req.params.name2 == 'tree') {
-      return iface.buildTree(doc._id).then(function(tree) {
+      return iface.buildTree(doc._id, options.rootPhase, options.rootBuilding, options).then(function(tree) {
         return res.json(tree);
       });
     } else {

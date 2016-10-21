@@ -18,7 +18,6 @@ var Tree = Backbone.Model.extend({
   recalculate: function() {
     var job = this.job;
     var data = ['phases', 'buildings', 'components'].map((m)=>job.collections[m].toJSON());
-    this.func = common.assembleTree(data);
     this.build();
   },
   defaults: {
@@ -38,20 +37,14 @@ var Tree = Backbone.Model.extend({
     return this.get('rootBuilding') ? this.job.collections.buildings.get(this.get('rootBuilding')).get('name') : null;
   },
   build: function() {
-    if(this.func == null) return this.recalculate();
-    // currentRootPhase, currentRootBuilding, level, phaseEnabled, buildingEnabled, componentEnabled, phaseDescendants, buildingDescendants
+    var phases = this.job.collections.phases.toJSON();
+    var buildings = this.job.collections.buildings.toJSON();
 
-    var result = this.func(
-      this.get('rootPhase'),
-      this.get('rootBuilding'),
-      0,
-      this.get('phaseEnabled'),
-      this.get('buildingEnabled'),
-      this.get('componentEnabled'),
-      this.get('phaseDescendants'),
-      this.get('buildingDescendants'),
-      this.get('emptyFolders')
-    );
+    var result = common.betterTree(
+        {enabled: this.get('phaseEnabled'), root: this.get('rootPhase'), objects: phases, descendants: this.get('phaseDescendants') ? common.getDescendants(phases) : false},
+        {enabled: this.get('buildingEnabled'), root: this.get('rootBuilding'), objects: buildings, descendants: this.get('buildingDescendants') ? common.getDescendants(buildings) : false},
+        {enabled: this.get('componentEnabled'), root: null, objects: this.job.collections.components.toJSON(), descendants: false},
+        0);
     this.tree = result.tree;
     this.included = result.included;
     this.trigger('build');

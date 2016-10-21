@@ -84,23 +84,15 @@ var iface = {
         // get phases etc belonging to job
         return Promise.all([Phase, Building, Component].map((m)=>m.find(q)));
 
-    }).then(common.assembleTree).then(function(func) {
-      // currentRootPhase, currentRootBuilding, level, phaseEnabled, buildingEnabled, componentEnabled, phaseDescendants, buildingDescendants
-      return func(
-        rootPhaseId, // root phase (filter, default null)
-        rootBuildingId, // root building (filter, default null)
-        0, // starting level
-        iface.tin(options.phaseEnabled),
-        iface.tin(options.buildingEnabled),
-        iface.tin(options.componentEnabled),
-        iface.tin(options.phaseDescendants),
-        iface.tin(options.buildingDescendants),
-        iface.tin(options.emptyFolders)
-      );
-    }).then(function(both) {
-      both.included.phases[rootPhaseId] = rootPhaseDoc;
-      both.included.buildings[rootBuildingId] = rootBuildingDoc;
-      return both;
+    }).then(function(arr) {
+      var phases = arr[0], buildings = arr[1], components = arr[2];
+      var tree = common.betterTree(
+          {enabled: options.phaseEnabled, root: rootPhaseId, objects: phases},
+          {enabled: options.buildingEnabled, root: rootBuildingId, objects: buildings},
+          {enabled: options.componentEnabled, root: null, objects: components},
+          0,
+          {included: true});
+      return tree;
     });
   },
   sqlQuery: function(query, arr) {
