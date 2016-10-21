@@ -60,10 +60,10 @@
               span Filters
             .dropdown-body
               input(id='phase-descendants-enabled', type='checkbox', rv-checked='tree:phaseDescendants').toggle
-              label(for='phase-descendants-enabled').icon.link
+              label(rv-if='tree:phaseEnabled', for='phase-descendants-enabled').icon.link
                 span Phase Descendants
               input(id='building-descendants-enabled', type='checkbox', rv-checked='tree:buildingDescendants').toggle
-              label(for='building-descendants-enabled').icon.link
+              label(rv-if='tree:buildingEnabled', for='building-descendants-enabled').icon.link
                 span Building Descendants
               input(id='empty-folders-enabled', type='checkbox', rv-checked='tree:emptyFolders').toggle
               label(for='empty-folders-enabled').icon.link

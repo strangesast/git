@@ -39,11 +39,21 @@ var Tree = Backbone.Model.extend({
   build: function() {
     var phases = this.job.collections.phases.toJSON();
     var buildings = this.job.collections.buildings.toJSON();
+    var components = this.job.collections.components.toJSON();
+
+    var phaseEnabled = this.get('phaseEnabled');
+    var buildingEnabled = this.get('buildingEnabled');
+    var componentEnabled = this.get('componentEnabled');
+
+    var rootPhase = this.get('rootPhase');
+    var rootBuilding = this.get('rootBuilding');
+    var phaseDescendants = this.get('phaseDescendants');
+    var buildingDescendants = this.get('buildingDescendants');
 
     var result = common.betterTree(
-        {enabled: this.get('phaseEnabled'), root: this.get('rootPhase'), objects: phases, descendants: this.get('phaseDescendants') ? common.getDescendants(phases) : false},
-        {enabled: this.get('buildingEnabled'), root: this.get('rootBuilding'), objects: buildings, descendants: this.get('buildingDescendants') ? common.getDescendants(buildings) : false},
-        {enabled: this.get('componentEnabled'), root: null, objects: this.job.collections.components.toJSON(), descendants: false},
+        {enabled: phaseEnabled,     root: rootPhase,    objects: phases,     descendants: !phaseEnabled || phaseDescendants ? common.getDescendants(phases) : false},
+        {enabled: buildingEnabled,  root: rootBuilding, objects: buildings,  descendants: !buildingEnabled || buildingDescendants ? common.getDescendants(buildings) : false},
+        {enabled: componentEnabled, root: null,         objects: components, descendants: false },
         0);
     this.tree = result.tree;
     this.included = result.included;
