@@ -93,7 +93,7 @@ var common = (function() {
       
       return {tree: all, included: included};
     },
-    generatorTree: function* (phase, building, component, level, options) {
+    treeChildren: function (phase, building, component, level, options) {
       level = level || 0;
       options = options || {};
       phase = {enabled: phase && phase.enabled, root: (phase && phase.root) ? phase.root : null, objects: phase.objects, descendants: phase.descendants};
@@ -109,14 +109,62 @@ var common = (function() {
       for(var i=0, prop; prop = ordered[i], i < ordered.length; i++) {
         let type = types[prop];
         if(type.enabled) {
-          let f = (ob) => ob['parent'] == type.root && (type != component || (common.hasAncestor(phase.descendants, ob['phase'], phase.root) && common.hasAncestor(building.descendants, ob['building'], building.root)));
+          let f;
+          let isCollection = (typeof Collection != 'undefined' && type.objects instanceof Collection);
+          if(isCollection) {
+            f = (ob) => ob.get('parent') == type.root && (type != component || (common.hasAncestor(phase.descendants, ob.get('phase'), phase.root) && common.hasAncestor(building.descendants, ob.get('building'), building.root)));
+          } else {
+            f = (ob) => ob['parent'] == type.root && (type != component || (common.hasAncestor(phase.descendants, ob['phase'], phase.root) && common.hasAncestor(building.descendants, ob['building'], building.root)));
+
+          }
           let parents = type.objects.filter(f);
-          all.push.apply(all, parents);
+          for(let j=0,_parent; _parent=parents[j], j < parents.length; j++) {
+            all.push({
+              '_id': isCollection ? _parent.get('_id') : _parent['_id'],
+              type: prop,
+              level: level,
+              open: false,
+              visible: true
+            });
+            if(options.included) {
+              included[isCollection ? _parent.get('_id') : _parent['_id']] = _parent;
+              Object.assign(included, both.included);
+            }
+          }
         }
       }
-
-      yield all; // level 0
-      return;
+      
+      return {tree: all, included: included};
+    },
+    buildTree: function(phase, building, component, level, options, maxlevel) {
+      maxlevel = maxlevel || 1;
+      var all = common.treeChildren(phase, building, component, level, options).tree;
+      do {
+        console.log(level, maxlevel);
+        let done = true;
+        for(var i=0; i < all.length; i++) {
+          var _parent = all[i];
+          if(_parent.level == level) {
+            let id = _parent['_id'];
+            let tree = common.treeChildren(
+                {enabled: _parent.type == 'phase' ? phase.enabled : false,        root: _parent.type == 'phase' ? id : phase.root,         objects: phase.objects,    descendants: phase.descendants},
+                {enabled: _parent.type != 'component' ? building.enabled : false, root: _parent.type == 'building' ? id : building.root,   objects: building.objects, descendants: building.descendants},
+                {enabled: component.enabled,                                      root: _parent.type == 'component' ? id : component.root, objects: component.objects},
+                level+1,
+                options).tree;
+            let args = [i+1, 0].concat(tree);
+            Array.prototype.splice.apply(all, args);
+            i+=tree.length;
+            done = false;
+          }
+        }
+        level++;
+        if(done) {
+          console.log('done')
+          break;
+        }
+      } while (level < maxlevel);
+      return all;
     }
   };
   return common;
