@@ -18,7 +18,6 @@
   flex-grow: 1;
   min-width: 0;
   position: relative;
-  overflow: hidden;
 
   .tree-filters {
     display: flex;
@@ -52,6 +51,7 @@
   z-index: 5;
   display: flex;
   align-items: center;
+  transition: transform 0.2s ease;
 
   a, span, i {
     white-space: nowrap;
@@ -95,10 +95,6 @@
     height: 100%;
     top: 0;
     opacity: 0;
-    transition: opacity 10s ease-in;
-    text-align: center;
-    line-height: @tree-element-height;
-    font-size: 2em;
   }
   .mask.left {
     left: 0;
@@ -110,15 +106,6 @@
     outline: 2px solid black;
     & ~ .tree-element:not(.fake) {
       transform: translateY(@tree-element-height);
-    }
-    .mask { opacity: 1;
-      border: 2px dashed black;
-    }
-    .mask.left:after {
-      content: 'sibling';
-    }
-    .mask.right:after {
-      content: 'child';
     }
   }
   .generate-levels(10);
