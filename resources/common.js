@@ -78,7 +78,10 @@ var common = (function() {
             all.push({
               '_id': _parent['_id'],
               type: prop,
-              level: level
+              level: level,
+              phase: phase.root,
+              building: building.root,
+              component: component.root
             });
             if(options.included) {
               included[_parent['_id']] = _parent;

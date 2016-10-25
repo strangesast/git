@@ -1,3 +1,11 @@
+var serializeObject = function(obj) {
+  var str = '';
+  for(var prop in obj) {
+    str += String(prop);
+    str += String(obj[prop]);
+  }
+  return str;
+}
 var Tree = Backbone.Model.extend({
   initialize: function(params, options) {
     this.job = options.job;
@@ -12,7 +20,7 @@ var Tree = Backbone.Model.extend({
     this.listenTo(this.job.collections.buildings, 'change', this.recalculate);
     this.listenTo(this.job.collections.components, 'change', this.recalculate);
 
-
+    this.buildTimeout = null;
     this.dragged = null;
   },
   recalculate: function() {
@@ -37,27 +45,31 @@ var Tree = Backbone.Model.extend({
     return this.get('rootBuilding') ? this.job.collections.buildings.get(this.get('rootBuilding')).get('name') : null;
   },
   build: function() {
-    var phases = this.job.collections.phases.toJSON();
-    var buildings = this.job.collections.buildings.toJSON();
-    var components = this.job.collections.components.toJSON();
+    clearTimeout(this.buildTimeout);
+    this.buildTimeout = setTimeout(function() {
+      var phases = this.job.collections.phases.toJSON();
+      var buildings = this.job.collections.buildings.toJSON();
+      var components = this.job.collections.components.toJSON();
 
-    var phaseEnabled = this.get('phaseEnabled');
-    var buildingEnabled = this.get('buildingEnabled');
-    var componentEnabled = this.get('componentEnabled');
+      var phaseEnabled = this.get('phaseEnabled');
+      var buildingEnabled = this.get('buildingEnabled');
+      var componentEnabled = this.get('componentEnabled');
 
-    var rootPhase = this.get('rootPhase');
-    var rootBuilding = this.get('rootBuilding');
-    var phaseDescendants = this.get('phaseDescendants');
-    var buildingDescendants = this.get('buildingDescendants');
+      var rootPhase = this.get('rootPhase');
+      var rootBuilding = this.get('rootBuilding');
+      var phaseDescendants = this.get('phaseDescendants');
+      var buildingDescendants = this.get('buildingDescendants');
 
-    var result = common.betterTree(
-        {enabled: phaseEnabled,     root: rootPhase,    objects: phases,     descendants: !phaseEnabled || phaseDescendants ? common.getDescendants(phases) : false},
-        {enabled: buildingEnabled,  root: rootBuilding, objects: buildings,  descendants: !buildingEnabled || buildingDescendants ? common.getDescendants(buildings) : false},
-        {enabled: componentEnabled, root: null,         objects: components, descendants: false },
-        0);
-    this.tree = result.tree;
-    this.included = result.included;
-    this.trigger('build');
+      var result = common.betterTree(
+          {enabled: phaseEnabled,     root: rootPhase,    objects: phases,     descendants: (!phaseEnabled || phaseDescendants) ? common.getDescendants(phases) : false},
+          {enabled: buildingEnabled,  root: rootBuilding, objects: buildings,  descendants: (!buildingEnabled || buildingDescendants) ? common.getDescendants(buildings) : false},
+          {enabled: componentEnabled, root: null,         objects: components, descendants: false },
+          0);
+      console.log(result);
+      this.tree = result.tree;
+      this.included = result.included;
+      this.trigger('build');
+    }.bind(this), 100);
   }
 });
 
@@ -234,6 +246,7 @@ var TreeView = BaseView.extend({
     this['short'] = false;
     this.bindTo = {model: this.model, view: this};
     this.listenTo(this.model, 'build', this.render);
+    this.contexts = new Map();
     this.model.build();
   },
   events: {
@@ -265,20 +278,40 @@ var TreeView = BaseView.extend({
   render: function() {
     BaseView.prototype.render.call(this);
     if(this.views) this.views.forEach((v)=>v.remove());
-    if(this.model.tree) {
-      this.views = this.model.tree.map((b)=>{
-        var ob = this.model.job.collections[b.type + 's'].get(b._id);
-        return new TreeElementView({model: ob, branch: b, tree: this.model});
+    var keep = [];
+    var tree = this.model.tree;
+    for(var i=0,leaf; leaf=tree[i],i < tree.length; i++) {
+      let ctx = serializeObject({
+        phase: leaf.phase,
+        building: leaf.building,
+        component: leaf.component,
+        id: leaf['_id']
       });
-      this.views.forEach((v)=>{
-        this.el.appendChild(v.render().el);
-      });
+      leaf.position = i;
+      if(!this.contexts.has(ctx)) {
+        let ob = this.model.job.collections[leaf.type + 's'].get(leaf._id);
+        this.contexts.set(ctx, new TreeElementView({model: ob, branch: leaf, tree: this.model}));
+      }
+      let view = this.contexts.get(ctx);
+      //Object.assign(view.branch, leaf);
+      for(var prop in leaf) {
+        view.branch[prop] = leaf[prop];
+      }
+      let el = view.render().el;
+      keep.push(view);
+      this.el.appendChild(el);
+    }
+    for(var val of this.contexts.values()) {
+      if(keep.indexOf(val) == -1) {
+        val.hide();
+      }
     }
   }
 });
 
 var TreeElementView = BaseView.extend({
   initialize: function(attrs, options) {
+    console.log('new view');
     for(var prop in attrs) {
       this[prop] = attrs[prop];
     }
@@ -297,6 +330,46 @@ var TreeElementView = BaseView.extend({
     'click .edit': 'editname',
     'click .root': 'addRoot',
     'keydown': 'keydown'
+  },
+  remove: function() {
+    let ctx = serializeObject({
+      phase: this.branch.phase,
+      building: this.branch.building,
+      component: this.branch.component,
+      id: this.branch['_id']
+    });
+    this.tree.contexts.delete(ctx);
+    BaseView.prototype.remove.apply(this, arguments);
+  },
+  //unhide: function(par) {
+  //  if(this.branch && this.branch.position != null) {
+  //    var el = this.render().el;
+  //    var offset = el.parentElement ? el.offsetTop : 0;
+  //    par.appendChild(el);
+  //    el.style.transform = 'translateY(' + String(-offset + el.offsetTop) + 'px)';
+  //    el.classList.add('moving');
+  //    setTimeout(function() {
+  //      //if(el.parentElement == null) par.appendChild(el);
+  //      //el.style.transform = 'translateY(' + String(-el.offsetTop + this.branch.position * el.offsetHeight) + 'px)';
+  //      setTimeout(function() {
+  //        el.style.transform = '';
+  //        setTimeout(function() {
+  //          el.classList.remove('moving');
+  //        }, 100);
+  //      }, 500);
+  //    }, 100);
+  //  } else {
+  //    par.appendChild(this.el);
+  //  }
+  //},
+  hide: function() {
+    if(this.el.parentElement) {
+      //this.el.style.transform = 'translateY(' + String(-this.el.offsetTop) + 'px)';
+      //setTimeout(function() {
+      //  this.el.style.transform = '';
+      this.el.parentElement.removeChild(this.el);
+      //}.bind(this), 500);
+    }
   },
   keydown: function(e) {
     if(e.target != this.el) return;
