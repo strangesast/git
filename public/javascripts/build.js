@@ -424,7 +424,7 @@ var TreeElementView = BaseView.extend({
         this.el.parentElement.appendChild(el);
       }
       el.classList.remove('hidden');
-      var str = 'translateY(' + String(Number(this.el.offsetTop)+60) + 'px )';
+      var str = 'translateY(' + String(Number(this.el.offsetTop)+this.el.offsetHeight) + 'px )';
       el.style.transform = str;
     }
     this.el.classList.add('hover');

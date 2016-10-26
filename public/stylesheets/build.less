@@ -118,6 +118,12 @@
 }
 .tree.short > .tree-element {
   height: @tree-element-height/2;
+  &.hover {
+    outline: 2px solid black;
+    & ~ .tree-element:not(.fake) {
+      transform: translateY(@tree-element-height/2);
+    }
+  }
 }
 .search-result, .tree-element {
   background: white;
